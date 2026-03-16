@@ -16027,6 +16027,11 @@ function useOutlet(context) {
 	let outlet = import_react.useContext(RouteContext).outlet;
 	return import_react.useMemo(() => outlet && /* @__PURE__ */ import_react.createElement(OutletContext.Provider, { value: context }, outlet), [outlet, context]);
 }
+function useParams() {
+	let { matches } = import_react.useContext(RouteContext);
+	let routeMatch = matches[matches.length - 1];
+	return routeMatch ? routeMatch.params : {};
+}
 function useResolvedPath(to, { relative } = {}) {
 	let { matches } = import_react.useContext(RouteContext);
 	let { pathname: locationPathname } = useLocation();
@@ -19021,6 +19026,13 @@ var createLucideIcon = (iconName, iconNode) => {
 	Component.displayName = toPascalCase(iconName);
 	return Component;
 };
+var ArrowLeft = createLucideIcon("arrow-left", [["path", {
+	d: "m12 19-7-7 7-7",
+	key: "1l729n"
+}], ["path", {
+	d: "M19 12H5",
+	key: "x3x0zl"
+}]]);
 var ArrowRight = createLucideIcon("arrow-right", [["path", {
 	d: "M5 12h14",
 	key: "1ays0h"
@@ -19035,6 +19047,28 @@ var BookOpen = createLucideIcon("book-open", [["path", {
 	d: "M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z",
 	key: "ruj8y"
 }]]);
+var Calendar = createLucideIcon("calendar", [
+	["path", {
+		d: "M8 2v4",
+		key: "1cmpym"
+	}],
+	["path", {
+		d: "M16 2v4",
+		key: "4m81vk"
+	}],
+	["rect", {
+		width: "18",
+		height: "18",
+		x: "3",
+		y: "4",
+		rx: "2",
+		key: "1hopcy"
+	}],
+	["path", {
+		d: "M3 10h18",
+		key: "8toen8"
+	}]
+]);
 var ChevronDown = createLucideIcon("chevron-down", [["path", {
 	d: "m6 9 6 6 6-6",
 	key: "qrunsl"
@@ -19047,6 +19081,15 @@ var CircleCheck = createLucideIcon("circle-check", [["circle", {
 }], ["path", {
 	d: "m9 12 2 2 4-4",
 	key: "dzmm74"
+}]]);
+var Clock = createLucideIcon("clock", [["circle", {
+	cx: "12",
+	cy: "12",
+	r: "10",
+	key: "1mglay"
+}], ["path", {
+	d: "M12 6v6l4 2",
+	key: "mmk7yg"
 }]]);
 var Facebook = createLucideIcon("facebook", [["path", {
 	d: "M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z",
@@ -19096,6 +19139,13 @@ var Menu = createLucideIcon("menu", [
 		key: "1djgab"
 	}]
 ]);
+var Quote = createLucideIcon("quote", [["path", {
+	d: "M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z",
+	key: "rib7q0"
+}], ["path", {
+	d: "M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z",
+	key: "1ymkrd"
+}]]);
 var ShoppingCart = createLucideIcon("shopping-cart", [
 	["circle", {
 		cx: "8",
@@ -19114,6 +19164,10 @@ var ShoppingCart = createLucideIcon("shopping-cart", [
 		key: "9zh506"
 	}]
 ]);
+var Star = createLucideIcon("star", [["path", {
+	d: "M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z",
+	key: "r04s7s"
+}]]);
 var X = createLucideIcon("x", [["path", {
 	d: "M18 6 6 18",
 	key: "1bl5f8"
@@ -19434,12 +19488,12 @@ var lengthUnitRegex = /\d+(%|px|r?em|[sdl]?v([hwib]|min|max)|pt|pc|in|cm|mm|cap|
 var colorFunctionRegex = /^(rgba?|hsla?|hwb|(ok)?(lab|lch)|color-mix)\(.+\)$/;
 var shadowRegex = /^(inset_)?-?((\d+)?\.?(\d+)[a-z]+|0)_-?((\d+)?\.?(\d+)[a-z]+|0)/;
 var imageRegex = /^(url|image|image-set|cross-fade|element|(repeating-)?(linear|radial|conic)-gradient)\(.+\)$/;
-var isLength = (value) => isNumber(value) || stringLengths.has(value) || fractionRegex.test(value);
+var isLength = (value) => isNumber$1(value) || stringLengths.has(value) || fractionRegex.test(value);
 var isArbitraryLength = (value) => getIsArbitraryValue(value, "length", isLengthOnly);
-var isNumber = (value) => Boolean(value) && !Number.isNaN(Number(value));
-var isArbitraryNumber = (value) => getIsArbitraryValue(value, "number", isNumber);
+var isNumber$1 = (value) => Boolean(value) && !Number.isNaN(Number(value));
+var isArbitraryNumber = (value) => getIsArbitraryValue(value, "number", isNumber$1);
 var isInteger = (value) => Boolean(value) && Number.isInteger(Number(value));
-var isPercent = (value) => value.endsWith("%") && isNumber(value.slice(0, -1));
+var isPercent = (value) => value.endsWith("%") && isNumber$1(value.slice(0, -1));
 var isArbitraryValue = (value) => arbitraryValueRegex.test(value);
 var isTshirtSize = (value) => tshirtUnitRegex.test(value);
 var sizeLabels = /* @__PURE__ */ new Set([
@@ -19516,7 +19570,7 @@ var getDefaultConfig = () => {
 	];
 	const getNumberWithAutoAndArbitrary = () => [
 		"auto",
-		isNumber,
+		isNumber$1,
 		isArbitraryValue
 	];
 	const getPositions = () => [
@@ -19579,7 +19633,7 @@ var getDefaultConfig = () => {
 		"right",
 		"column"
 	];
-	const getNumberAndArbitrary = () => [isNumber, isArbitraryValue];
+	const getNumberAndArbitrary = () => [isNumber$1, isArbitraryValue];
 	return {
 		cacheSize: 500,
 		separator: ":",
@@ -19968,7 +20022,7 @@ var getDefaultConfig = () => {
 			] }],
 			"line-clamp": [{ "line-clamp": [
 				"none",
-				isNumber,
+				isNumber$1,
 				isArbitraryNumber
 			] }],
 			leading: [{ leading: [
@@ -25011,6 +25065,1828 @@ function CoreTopics() {
 	});
 }
 //#endregion
+//#region ../../cache/modules/wms-base-eficiencia-c56b6/node_modules/.pnpm/embla-carousel-reactive-utils@8.6.0_embla-carousel@8.6.0/node_modules/embla-carousel-reactive-utils/esm/embla-carousel-reactive-utils.esm.js
+function isObject$1(subject) {
+	return Object.prototype.toString.call(subject) === "[object Object]";
+}
+function isRecord(subject) {
+	return isObject$1(subject) || Array.isArray(subject);
+}
+function canUseDOM() {
+	return !!(typeof window !== "undefined" && window.document && window.document.createElement);
+}
+function areOptionsEqual(optionsA, optionsB) {
+	const optionsAKeys = Object.keys(optionsA);
+	const optionsBKeys = Object.keys(optionsB);
+	if (optionsAKeys.length !== optionsBKeys.length) return false;
+	if (JSON.stringify(Object.keys(optionsA.breakpoints || {})) !== JSON.stringify(Object.keys(optionsB.breakpoints || {}))) return false;
+	return optionsAKeys.every((key) => {
+		const valueA = optionsA[key];
+		const valueB = optionsB[key];
+		if (typeof valueA === "function") return `${valueA}` === `${valueB}`;
+		if (!isRecord(valueA) || !isRecord(valueB)) return valueA === valueB;
+		return areOptionsEqual(valueA, valueB);
+	});
+}
+function sortAndMapPluginToOptions(plugins) {
+	return plugins.concat().sort((a, b) => a.name > b.name ? 1 : -1).map((plugin) => plugin.options);
+}
+function arePluginsEqual(pluginsA, pluginsB) {
+	if (pluginsA.length !== pluginsB.length) return false;
+	const optionsA = sortAndMapPluginToOptions(pluginsA);
+	const optionsB = sortAndMapPluginToOptions(pluginsB);
+	return optionsA.every((optionA, index) => {
+		const optionB = optionsB[index];
+		return areOptionsEqual(optionA, optionB);
+	});
+}
+//#endregion
+//#region ../../cache/modules/wms-base-eficiencia-c56b6/node_modules/.pnpm/embla-carousel@8.6.0/node_modules/embla-carousel/esm/embla-carousel.esm.js
+function isNumber(subject) {
+	return typeof subject === "number";
+}
+function isString(subject) {
+	return typeof subject === "string";
+}
+function isBoolean(subject) {
+	return typeof subject === "boolean";
+}
+function isObject(subject) {
+	return Object.prototype.toString.call(subject) === "[object Object]";
+}
+function mathAbs(n) {
+	return Math.abs(n);
+}
+function mathSign(n) {
+	return Math.sign(n);
+}
+function deltaAbs(valueB, valueA) {
+	return mathAbs(valueB - valueA);
+}
+function factorAbs(valueB, valueA) {
+	if (valueB === 0 || valueA === 0) return 0;
+	if (mathAbs(valueB) <= mathAbs(valueA)) return 0;
+	return mathAbs(deltaAbs(mathAbs(valueB), mathAbs(valueA)) / valueB);
+}
+function roundToTwoDecimals(num) {
+	return Math.round(num * 100) / 100;
+}
+function arrayKeys(array) {
+	return objectKeys(array).map(Number);
+}
+function arrayLast(array) {
+	return array[arrayLastIndex(array)];
+}
+function arrayLastIndex(array) {
+	return Math.max(0, array.length - 1);
+}
+function arrayIsLastIndex(array, index) {
+	return index === arrayLastIndex(array);
+}
+function arrayFromNumber(n, startAt = 0) {
+	return Array.from(Array(n), (_, i) => startAt + i);
+}
+function objectKeys(object) {
+	return Object.keys(object);
+}
+function objectsMergeDeep(objectA, objectB) {
+	return [objectA, objectB].reduce((mergedObjects, currentObject) => {
+		objectKeys(currentObject).forEach((key) => {
+			const valueA = mergedObjects[key];
+			const valueB = currentObject[key];
+			mergedObjects[key] = isObject(valueA) && isObject(valueB) ? objectsMergeDeep(valueA, valueB) : valueB;
+		});
+		return mergedObjects;
+	}, {});
+}
+function isMouseEvent(evt, ownerWindow) {
+	return typeof ownerWindow.MouseEvent !== "undefined" && evt instanceof ownerWindow.MouseEvent;
+}
+function Alignment(align, viewSize) {
+	const predefined = {
+		start,
+		center,
+		end
+	};
+	function start() {
+		return 0;
+	}
+	function center(n) {
+		return end(n) / 2;
+	}
+	function end(n) {
+		return viewSize - n;
+	}
+	function measure(n, index) {
+		if (isString(align)) return predefined[align](n);
+		return align(viewSize, n, index);
+	}
+	return { measure };
+}
+function EventStore() {
+	let listeners = [];
+	function add(node, type, handler, options = { passive: true }) {
+		let removeListener;
+		if ("addEventListener" in node) {
+			node.addEventListener(type, handler, options);
+			removeListener = () => node.removeEventListener(type, handler, options);
+		} else {
+			const legacyMediaQueryList = node;
+			legacyMediaQueryList.addListener(handler);
+			removeListener = () => legacyMediaQueryList.removeListener(handler);
+		}
+		listeners.push(removeListener);
+		return self;
+	}
+	function clear() {
+		listeners = listeners.filter((remove) => remove());
+	}
+	const self = {
+		add,
+		clear
+	};
+	return self;
+}
+function Animations(ownerDocument, ownerWindow, update, render) {
+	const documentVisibleHandler = EventStore();
+	const fixedTimeStep = 1e3 / 60;
+	let lastTimeStamp = null;
+	let accumulatedTime = 0;
+	let animationId = 0;
+	function init() {
+		documentVisibleHandler.add(ownerDocument, "visibilitychange", () => {
+			if (ownerDocument.hidden) reset();
+		});
+	}
+	function destroy() {
+		stop();
+		documentVisibleHandler.clear();
+	}
+	function animate(timeStamp) {
+		if (!animationId) return;
+		if (!lastTimeStamp) {
+			lastTimeStamp = timeStamp;
+			update();
+			update();
+		}
+		const timeElapsed = timeStamp - lastTimeStamp;
+		lastTimeStamp = timeStamp;
+		accumulatedTime += timeElapsed;
+		while (accumulatedTime >= fixedTimeStep) {
+			update();
+			accumulatedTime -= fixedTimeStep;
+		}
+		render(accumulatedTime / fixedTimeStep);
+		if (animationId) animationId = ownerWindow.requestAnimationFrame(animate);
+	}
+	function start() {
+		if (animationId) return;
+		animationId = ownerWindow.requestAnimationFrame(animate);
+	}
+	function stop() {
+		ownerWindow.cancelAnimationFrame(animationId);
+		lastTimeStamp = null;
+		accumulatedTime = 0;
+		animationId = 0;
+	}
+	function reset() {
+		lastTimeStamp = null;
+		accumulatedTime = 0;
+	}
+	return {
+		init,
+		destroy,
+		start,
+		stop,
+		update,
+		render
+	};
+}
+function Axis(axis, contentDirection) {
+	const isRightToLeft = contentDirection === "rtl";
+	const isVertical = axis === "y";
+	const scroll = isVertical ? "y" : "x";
+	const cross = isVertical ? "x" : "y";
+	const sign = !isVertical && isRightToLeft ? -1 : 1;
+	const startEdge = getStartEdge();
+	const endEdge = getEndEdge();
+	function measureSize(nodeRect) {
+		const { height, width } = nodeRect;
+		return isVertical ? height : width;
+	}
+	function getStartEdge() {
+		if (isVertical) return "top";
+		return isRightToLeft ? "right" : "left";
+	}
+	function getEndEdge() {
+		if (isVertical) return "bottom";
+		return isRightToLeft ? "left" : "right";
+	}
+	function direction(n) {
+		return n * sign;
+	}
+	return {
+		scroll,
+		cross,
+		startEdge,
+		endEdge,
+		measureSize,
+		direction
+	};
+}
+function Limit(min = 0, max = 0) {
+	const length = mathAbs(min - max);
+	function reachedMin(n) {
+		return n < min;
+	}
+	function reachedMax(n) {
+		return n > max;
+	}
+	function reachedAny(n) {
+		return reachedMin(n) || reachedMax(n);
+	}
+	function constrain(n) {
+		if (!reachedAny(n)) return n;
+		return reachedMin(n) ? min : max;
+	}
+	function removeOffset(n) {
+		if (!length) return n;
+		return n - length * Math.ceil((n - max) / length);
+	}
+	return {
+		length,
+		max,
+		min,
+		constrain,
+		reachedAny,
+		reachedMax,
+		reachedMin,
+		removeOffset
+	};
+}
+function Counter(max, start, loop) {
+	const { constrain } = Limit(0, max);
+	const loopEnd = max + 1;
+	let counter = withinLimit(start);
+	function withinLimit(n) {
+		return !loop ? constrain(n) : mathAbs((loopEnd + n) % loopEnd);
+	}
+	function get() {
+		return counter;
+	}
+	function set(n) {
+		counter = withinLimit(n);
+		return self;
+	}
+	function add(n) {
+		return clone().set(get() + n);
+	}
+	function clone() {
+		return Counter(max, get(), loop);
+	}
+	const self = {
+		get,
+		set,
+		add,
+		clone
+	};
+	return self;
+}
+function DragHandler(axis, rootNode, ownerDocument, ownerWindow, target, dragTracker, location, animation, scrollTo, scrollBody, scrollTarget, index, eventHandler, percentOfView, dragFree, dragThreshold, skipSnaps, baseFriction, watchDrag) {
+	const { cross: crossAxis, direction } = axis;
+	const focusNodes = [
+		"INPUT",
+		"SELECT",
+		"TEXTAREA"
+	];
+	const nonPassiveEvent = { passive: false };
+	const initEvents = EventStore();
+	const dragEvents = EventStore();
+	const goToNextThreshold = Limit(50, 225).constrain(percentOfView.measure(20));
+	const snapForceBoost = {
+		mouse: 300,
+		touch: 400
+	};
+	const freeForceBoost = {
+		mouse: 500,
+		touch: 600
+	};
+	const baseSpeed = dragFree ? 43 : 25;
+	let isMoving = false;
+	let startScroll = 0;
+	let startCross = 0;
+	let pointerIsDown = false;
+	let preventScroll = false;
+	let preventClick = false;
+	let isMouse = false;
+	function init(emblaApi) {
+		if (!watchDrag) return;
+		function downIfAllowed(evt) {
+			if (isBoolean(watchDrag) || watchDrag(emblaApi, evt)) down(evt);
+		}
+		const node = rootNode;
+		initEvents.add(node, "dragstart", (evt) => evt.preventDefault(), nonPassiveEvent).add(node, "touchmove", () => void 0, nonPassiveEvent).add(node, "touchend", () => void 0).add(node, "touchstart", downIfAllowed).add(node, "mousedown", downIfAllowed).add(node, "touchcancel", up).add(node, "contextmenu", up).add(node, "click", click, true);
+	}
+	function destroy() {
+		initEvents.clear();
+		dragEvents.clear();
+	}
+	function addDragEvents() {
+		const node = isMouse ? ownerDocument : rootNode;
+		dragEvents.add(node, "touchmove", move, nonPassiveEvent).add(node, "touchend", up).add(node, "mousemove", move, nonPassiveEvent).add(node, "mouseup", up);
+	}
+	function isFocusNode(node) {
+		const nodeName = node.nodeName || "";
+		return focusNodes.includes(nodeName);
+	}
+	function forceBoost() {
+		return (dragFree ? freeForceBoost : snapForceBoost)[isMouse ? "mouse" : "touch"];
+	}
+	function allowedForce(force, targetChanged) {
+		const next = index.add(mathSign(force) * -1);
+		const baseForce = scrollTarget.byDistance(force, !dragFree).distance;
+		if (dragFree || mathAbs(force) < goToNextThreshold) return baseForce;
+		if (skipSnaps && targetChanged) return baseForce * .5;
+		return scrollTarget.byIndex(next.get(), 0).distance;
+	}
+	function down(evt) {
+		const isMouseEvt = isMouseEvent(evt, ownerWindow);
+		isMouse = isMouseEvt;
+		preventClick = dragFree && isMouseEvt && !evt.buttons && isMoving;
+		isMoving = deltaAbs(target.get(), location.get()) >= 2;
+		if (isMouseEvt && evt.button !== 0) return;
+		if (isFocusNode(evt.target)) return;
+		pointerIsDown = true;
+		dragTracker.pointerDown(evt);
+		scrollBody.useFriction(0).useDuration(0);
+		target.set(location);
+		addDragEvents();
+		startScroll = dragTracker.readPoint(evt);
+		startCross = dragTracker.readPoint(evt, crossAxis);
+		eventHandler.emit("pointerDown");
+	}
+	function move(evt) {
+		if (!isMouseEvent(evt, ownerWindow) && evt.touches.length >= 2) return up(evt);
+		const lastScroll = dragTracker.readPoint(evt);
+		const lastCross = dragTracker.readPoint(evt, crossAxis);
+		const diffScroll = deltaAbs(lastScroll, startScroll);
+		const diffCross = deltaAbs(lastCross, startCross);
+		if (!preventScroll && !isMouse) {
+			if (!evt.cancelable) return up(evt);
+			preventScroll = diffScroll > diffCross;
+			if (!preventScroll) return up(evt);
+		}
+		const diff = dragTracker.pointerMove(evt);
+		if (diffScroll > dragThreshold) preventClick = true;
+		scrollBody.useFriction(.3).useDuration(.75);
+		animation.start();
+		target.add(direction(diff));
+		evt.preventDefault();
+	}
+	function up(evt) {
+		const targetChanged = scrollTarget.byDistance(0, false).index !== index.get();
+		const rawForce = dragTracker.pointerUp(evt) * forceBoost();
+		const force = allowedForce(direction(rawForce), targetChanged);
+		const forceFactor = factorAbs(rawForce, force);
+		const speed = baseSpeed - 10 * forceFactor;
+		const friction = baseFriction + forceFactor / 50;
+		preventScroll = false;
+		pointerIsDown = false;
+		dragEvents.clear();
+		scrollBody.useDuration(speed).useFriction(friction);
+		scrollTo.distance(force, !dragFree);
+		isMouse = false;
+		eventHandler.emit("pointerUp");
+	}
+	function click(evt) {
+		if (preventClick) {
+			evt.stopPropagation();
+			evt.preventDefault();
+			preventClick = false;
+		}
+	}
+	function pointerDown() {
+		return pointerIsDown;
+	}
+	return {
+		init,
+		destroy,
+		pointerDown
+	};
+}
+function DragTracker(axis, ownerWindow) {
+	const logInterval = 170;
+	let startEvent;
+	let lastEvent;
+	function readTime(evt) {
+		return evt.timeStamp;
+	}
+	function readPoint(evt, evtAxis) {
+		const coord = `client${(evtAxis || axis.scroll) === "x" ? "X" : "Y"}`;
+		return (isMouseEvent(evt, ownerWindow) ? evt : evt.touches[0])[coord];
+	}
+	function pointerDown(evt) {
+		startEvent = evt;
+		lastEvent = evt;
+		return readPoint(evt);
+	}
+	function pointerMove(evt) {
+		const diff = readPoint(evt) - readPoint(lastEvent);
+		const expired = readTime(evt) - readTime(startEvent) > logInterval;
+		lastEvent = evt;
+		if (expired) startEvent = evt;
+		return diff;
+	}
+	function pointerUp(evt) {
+		if (!startEvent || !lastEvent) return 0;
+		const diffDrag = readPoint(lastEvent) - readPoint(startEvent);
+		const diffTime = readTime(evt) - readTime(startEvent);
+		const expired = readTime(evt) - readTime(lastEvent) > logInterval;
+		const force = diffDrag / diffTime;
+		return diffTime && !expired && mathAbs(force) > .1 ? force : 0;
+	}
+	return {
+		pointerDown,
+		pointerMove,
+		pointerUp,
+		readPoint
+	};
+}
+function NodeRects() {
+	function measure(node) {
+		const { offsetTop, offsetLeft, offsetWidth, offsetHeight } = node;
+		return {
+			top: offsetTop,
+			right: offsetLeft + offsetWidth,
+			bottom: offsetTop + offsetHeight,
+			left: offsetLeft,
+			width: offsetWidth,
+			height: offsetHeight
+		};
+	}
+	return { measure };
+}
+function PercentOfView(viewSize) {
+	function measure(n) {
+		return viewSize * (n / 100);
+	}
+	return { measure };
+}
+function ResizeHandler(container, eventHandler, ownerWindow, slides, axis, watchResize, nodeRects) {
+	const observeNodes = [container].concat(slides);
+	let resizeObserver;
+	let containerSize;
+	let slideSizes = [];
+	let destroyed = false;
+	function readSize(node) {
+		return axis.measureSize(nodeRects.measure(node));
+	}
+	function init(emblaApi) {
+		if (!watchResize) return;
+		containerSize = readSize(container);
+		slideSizes = slides.map(readSize);
+		function defaultCallback(entries) {
+			for (const entry of entries) {
+				if (destroyed) return;
+				const isContainer = entry.target === container;
+				const slideIndex = slides.indexOf(entry.target);
+				const lastSize = isContainer ? containerSize : slideSizes[slideIndex];
+				if (mathAbs(readSize(isContainer ? container : slides[slideIndex]) - lastSize) >= .5) {
+					emblaApi.reInit();
+					eventHandler.emit("resize");
+					break;
+				}
+			}
+		}
+		resizeObserver = new ResizeObserver((entries) => {
+			if (isBoolean(watchResize) || watchResize(emblaApi, entries)) defaultCallback(entries);
+		});
+		ownerWindow.requestAnimationFrame(() => {
+			observeNodes.forEach((node) => resizeObserver.observe(node));
+		});
+	}
+	function destroy() {
+		destroyed = true;
+		if (resizeObserver) resizeObserver.disconnect();
+	}
+	return {
+		init,
+		destroy
+	};
+}
+function ScrollBody(location, offsetLocation, previousLocation, target, baseDuration, baseFriction) {
+	let scrollVelocity = 0;
+	let scrollDirection = 0;
+	let scrollDuration = baseDuration;
+	let scrollFriction = baseFriction;
+	let rawLocation = location.get();
+	let rawLocationPrevious = 0;
+	function seek() {
+		const displacement = target.get() - location.get();
+		const isInstant = !scrollDuration;
+		let scrollDistance = 0;
+		if (isInstant) {
+			scrollVelocity = 0;
+			previousLocation.set(target);
+			location.set(target);
+			scrollDistance = displacement;
+		} else {
+			previousLocation.set(location);
+			scrollVelocity += displacement / scrollDuration;
+			scrollVelocity *= scrollFriction;
+			rawLocation += scrollVelocity;
+			location.add(scrollVelocity);
+			scrollDistance = rawLocation - rawLocationPrevious;
+		}
+		scrollDirection = mathSign(scrollDistance);
+		rawLocationPrevious = rawLocation;
+		return self;
+	}
+	function settled() {
+		return mathAbs(target.get() - offsetLocation.get()) < .001;
+	}
+	function duration() {
+		return scrollDuration;
+	}
+	function direction() {
+		return scrollDirection;
+	}
+	function velocity() {
+		return scrollVelocity;
+	}
+	function useBaseDuration() {
+		return useDuration(baseDuration);
+	}
+	function useBaseFriction() {
+		return useFriction(baseFriction);
+	}
+	function useDuration(n) {
+		scrollDuration = n;
+		return self;
+	}
+	function useFriction(n) {
+		scrollFriction = n;
+		return self;
+	}
+	const self = {
+		direction,
+		duration,
+		velocity,
+		seek,
+		settled,
+		useBaseFriction,
+		useBaseDuration,
+		useFriction,
+		useDuration
+	};
+	return self;
+}
+function ScrollBounds(limit, location, target, scrollBody, percentOfView) {
+	const pullBackThreshold = percentOfView.measure(10);
+	const edgeOffsetTolerance = percentOfView.measure(50);
+	const frictionLimit = Limit(.1, .99);
+	let disabled = false;
+	function shouldConstrain() {
+		if (disabled) return false;
+		if (!limit.reachedAny(target.get())) return false;
+		if (!limit.reachedAny(location.get())) return false;
+		return true;
+	}
+	function constrain(pointerDown) {
+		if (!shouldConstrain()) return;
+		const diffToEdge = mathAbs(limit[limit.reachedMin(location.get()) ? "min" : "max"] - location.get());
+		const diffToTarget = target.get() - location.get();
+		const friction = frictionLimit.constrain(diffToEdge / edgeOffsetTolerance);
+		target.subtract(diffToTarget * friction);
+		if (!pointerDown && mathAbs(diffToTarget) < pullBackThreshold) {
+			target.set(limit.constrain(target.get()));
+			scrollBody.useDuration(25).useBaseFriction();
+		}
+	}
+	function toggleActive(active) {
+		disabled = !active;
+	}
+	return {
+		shouldConstrain,
+		constrain,
+		toggleActive
+	};
+}
+function ScrollContain(viewSize, contentSize, snapsAligned, containScroll, pixelTolerance) {
+	const scrollBounds = Limit(-contentSize + viewSize, 0);
+	const snapsBounded = measureBounded();
+	const scrollContainLimit = findScrollContainLimit();
+	const snapsContained = measureContained();
+	function usePixelTolerance(bound, snap) {
+		return deltaAbs(bound, snap) <= 1;
+	}
+	function findScrollContainLimit() {
+		const startSnap = snapsBounded[0];
+		const endSnap = arrayLast(snapsBounded);
+		return Limit(snapsBounded.lastIndexOf(startSnap), snapsBounded.indexOf(endSnap) + 1);
+	}
+	function measureBounded() {
+		return snapsAligned.map((snapAligned, index) => {
+			const { min, max } = scrollBounds;
+			const snap = scrollBounds.constrain(snapAligned);
+			const isFirst = !index;
+			const isLast = arrayIsLastIndex(snapsAligned, index);
+			if (isFirst) return max;
+			if (isLast) return min;
+			if (usePixelTolerance(min, snap)) return min;
+			if (usePixelTolerance(max, snap)) return max;
+			return snap;
+		}).map((scrollBound) => parseFloat(scrollBound.toFixed(3)));
+	}
+	function measureContained() {
+		if (contentSize <= viewSize + pixelTolerance) return [scrollBounds.max];
+		if (containScroll === "keepSnaps") return snapsBounded;
+		const { min, max } = scrollContainLimit;
+		return snapsBounded.slice(min, max);
+	}
+	return {
+		snapsContained,
+		scrollContainLimit
+	};
+}
+function ScrollLimit(contentSize, scrollSnaps, loop) {
+	const max = scrollSnaps[0];
+	return { limit: Limit(loop ? max - contentSize : arrayLast(scrollSnaps), max) };
+}
+function ScrollLooper(contentSize, limit, location, vectors) {
+	const jointSafety = .1;
+	const { reachedMin, reachedMax } = Limit(limit.min + jointSafety, limit.max + jointSafety);
+	function shouldLoop(direction) {
+		if (direction === 1) return reachedMax(location.get());
+		if (direction === -1) return reachedMin(location.get());
+		return false;
+	}
+	function loop(direction) {
+		if (!shouldLoop(direction)) return;
+		const loopDistance = contentSize * (direction * -1);
+		vectors.forEach((v) => v.add(loopDistance));
+	}
+	return { loop };
+}
+function ScrollProgress(limit) {
+	const { max, length } = limit;
+	function get(n) {
+		const currentLocation = n - max;
+		return length ? currentLocation / -length : 0;
+	}
+	return { get };
+}
+function ScrollSnaps(axis, alignment, containerRect, slideRects, slidesToScroll) {
+	const { startEdge, endEdge } = axis;
+	const { groupSlides } = slidesToScroll;
+	const alignments = measureSizes().map(alignment.measure);
+	const snaps = measureUnaligned();
+	const snapsAligned = measureAligned();
+	function measureSizes() {
+		return groupSlides(slideRects).map((rects) => arrayLast(rects)[endEdge] - rects[0][startEdge]).map(mathAbs);
+	}
+	function measureUnaligned() {
+		return slideRects.map((rect) => containerRect[startEdge] - rect[startEdge]).map((snap) => -mathAbs(snap));
+	}
+	function measureAligned() {
+		return groupSlides(snaps).map((g) => g[0]).map((snap, index) => snap + alignments[index]);
+	}
+	return {
+		snaps,
+		snapsAligned
+	};
+}
+function SlideRegistry(containSnaps, containScroll, scrollSnaps, scrollContainLimit, slidesToScroll, slideIndexes) {
+	const { groupSlides } = slidesToScroll;
+	const { min, max } = scrollContainLimit;
+	const slideRegistry = createSlideRegistry();
+	function createSlideRegistry() {
+		const groupedSlideIndexes = groupSlides(slideIndexes);
+		const doNotContain = !containSnaps || containScroll === "keepSnaps";
+		if (scrollSnaps.length === 1) return [slideIndexes];
+		if (doNotContain) return groupedSlideIndexes;
+		return groupedSlideIndexes.slice(min, max).map((group, index, groups) => {
+			const isFirst = !index;
+			const isLast = arrayIsLastIndex(groups, index);
+			if (isFirst) return arrayFromNumber(arrayLast(groups[0]) + 1);
+			if (isLast) return arrayFromNumber(arrayLastIndex(slideIndexes) - arrayLast(groups)[0] + 1, arrayLast(groups)[0]);
+			return group;
+		});
+	}
+	return { slideRegistry };
+}
+function ScrollTarget(loop, scrollSnaps, contentSize, limit, targetVector) {
+	const { reachedAny, removeOffset, constrain } = limit;
+	function minDistance(distances) {
+		return distances.concat().sort((a, b) => mathAbs(a) - mathAbs(b))[0];
+	}
+	function findTargetSnap(target) {
+		const distance = loop ? removeOffset(target) : constrain(target);
+		const { index } = scrollSnaps.map((snap, index) => ({
+			diff: shortcut(snap - distance, 0),
+			index
+		})).sort((d1, d2) => mathAbs(d1.diff) - mathAbs(d2.diff))[0];
+		return {
+			index,
+			distance
+		};
+	}
+	function shortcut(target, direction) {
+		const targets = [
+			target,
+			target + contentSize,
+			target - contentSize
+		];
+		if (!loop) return target;
+		if (!direction) return minDistance(targets);
+		const matchingTargets = targets.filter((t) => mathSign(t) === direction);
+		if (matchingTargets.length) return minDistance(matchingTargets);
+		return arrayLast(targets) - contentSize;
+	}
+	function byIndex(index, direction) {
+		return {
+			index,
+			distance: shortcut(scrollSnaps[index] - targetVector.get(), direction)
+		};
+	}
+	function byDistance(distance, snap) {
+		const target = targetVector.get() + distance;
+		const { index, distance: targetSnapDistance } = findTargetSnap(target);
+		const reachedBound = !loop && reachedAny(target);
+		if (!snap || reachedBound) return {
+			index,
+			distance
+		};
+		return {
+			index,
+			distance: distance + shortcut(scrollSnaps[index] - targetSnapDistance, 0)
+		};
+	}
+	return {
+		byDistance,
+		byIndex,
+		shortcut
+	};
+}
+function ScrollTo(animation, indexCurrent, indexPrevious, scrollBody, scrollTarget, targetVector, eventHandler) {
+	function scrollTo(target) {
+		const distanceDiff = target.distance;
+		const indexDiff = target.index !== indexCurrent.get();
+		targetVector.add(distanceDiff);
+		if (distanceDiff) if (scrollBody.duration()) animation.start();
+		else {
+			animation.update();
+			animation.render(1);
+			animation.update();
+		}
+		if (indexDiff) {
+			indexPrevious.set(indexCurrent.get());
+			indexCurrent.set(target.index);
+			eventHandler.emit("select");
+		}
+	}
+	function distance(n, snap) {
+		scrollTo(scrollTarget.byDistance(n, snap));
+	}
+	function index(n, direction) {
+		const targetIndex = indexCurrent.clone().set(n);
+		scrollTo(scrollTarget.byIndex(targetIndex.get(), direction));
+	}
+	return {
+		distance,
+		index
+	};
+}
+function SlideFocus(root, slides, slideRegistry, scrollTo, scrollBody, eventStore, eventHandler, watchFocus) {
+	const focusListenerOptions = {
+		passive: true,
+		capture: true
+	};
+	let lastTabPressTime = 0;
+	function init(emblaApi) {
+		if (!watchFocus) return;
+		function defaultCallback(index) {
+			if ((/* @__PURE__ */ new Date()).getTime() - lastTabPressTime > 10) return;
+			eventHandler.emit("slideFocusStart");
+			root.scrollLeft = 0;
+			const group = slideRegistry.findIndex((group) => group.includes(index));
+			if (!isNumber(group)) return;
+			scrollBody.useDuration(0);
+			scrollTo.index(group, 0);
+			eventHandler.emit("slideFocus");
+		}
+		eventStore.add(document, "keydown", registerTabPress, false);
+		slides.forEach((slide, slideIndex) => {
+			eventStore.add(slide, "focus", (evt) => {
+				if (isBoolean(watchFocus) || watchFocus(emblaApi, evt)) defaultCallback(slideIndex);
+			}, focusListenerOptions);
+		});
+	}
+	function registerTabPress(event) {
+		if (event.code === "Tab") lastTabPressTime = (/* @__PURE__ */ new Date()).getTime();
+	}
+	return { init };
+}
+function Vector1D(initialValue) {
+	let value = initialValue;
+	function get() {
+		return value;
+	}
+	function set(n) {
+		value = normalizeInput(n);
+	}
+	function add(n) {
+		value += normalizeInput(n);
+	}
+	function subtract(n) {
+		value -= normalizeInput(n);
+	}
+	function normalizeInput(n) {
+		return isNumber(n) ? n : n.get();
+	}
+	return {
+		get,
+		set,
+		add,
+		subtract
+	};
+}
+function Translate(axis, container) {
+	const translate = axis.scroll === "x" ? x : y;
+	const containerStyle = container.style;
+	let previousTarget = null;
+	let disabled = false;
+	function x(n) {
+		return `translate3d(${n}px,0px,0px)`;
+	}
+	function y(n) {
+		return `translate3d(0px,${n}px,0px)`;
+	}
+	function to(target) {
+		if (disabled) return;
+		const newTarget = roundToTwoDecimals(axis.direction(target));
+		if (newTarget === previousTarget) return;
+		containerStyle.transform = translate(newTarget);
+		previousTarget = newTarget;
+	}
+	function toggleActive(active) {
+		disabled = !active;
+	}
+	function clear() {
+		if (disabled) return;
+		containerStyle.transform = "";
+		if (!container.getAttribute("style")) container.removeAttribute("style");
+	}
+	return {
+		clear,
+		to,
+		toggleActive
+	};
+}
+function SlideLooper(axis, viewSize, contentSize, slideSizes, slideSizesWithGaps, snaps, scrollSnaps, location, slides) {
+	const roundingSafety = .5;
+	const ascItems = arrayKeys(slideSizesWithGaps);
+	const descItems = arrayKeys(slideSizesWithGaps).reverse();
+	const loopPoints = startPoints().concat(endPoints());
+	function removeSlideSizes(indexes, from) {
+		return indexes.reduce((a, i) => {
+			return a - slideSizesWithGaps[i];
+		}, from);
+	}
+	function slidesInGap(indexes, gap) {
+		return indexes.reduce((a, i) => {
+			return removeSlideSizes(a, gap) > 0 ? a.concat([i]) : a;
+		}, []);
+	}
+	function findSlideBounds(offset) {
+		return snaps.map((snap, index) => ({
+			start: snap - slideSizes[index] + roundingSafety + offset,
+			end: snap + viewSize - roundingSafety + offset
+		}));
+	}
+	function findLoopPoints(indexes, offset, isEndEdge) {
+		const slideBounds = findSlideBounds(offset);
+		return indexes.map((index) => {
+			const initial = isEndEdge ? 0 : -contentSize;
+			const altered = isEndEdge ? contentSize : 0;
+			const boundEdge = isEndEdge ? "end" : "start";
+			const loopPoint = slideBounds[index][boundEdge];
+			return {
+				index,
+				loopPoint,
+				slideLocation: Vector1D(-1),
+				translate: Translate(axis, slides[index]),
+				target: () => location.get() > loopPoint ? initial : altered
+			};
+		});
+	}
+	function startPoints() {
+		const gap = scrollSnaps[0];
+		return findLoopPoints(slidesInGap(descItems, gap), contentSize, false);
+	}
+	function endPoints() {
+		return findLoopPoints(slidesInGap(ascItems, viewSize - scrollSnaps[0] - 1), -contentSize, true);
+	}
+	function canLoop() {
+		return loopPoints.every(({ index }) => {
+			return removeSlideSizes(ascItems.filter((i) => i !== index), viewSize) <= .1;
+		});
+	}
+	function loop() {
+		loopPoints.forEach((loopPoint) => {
+			const { target, translate, slideLocation } = loopPoint;
+			const shiftLocation = target();
+			if (shiftLocation === slideLocation.get()) return;
+			translate.to(shiftLocation);
+			slideLocation.set(shiftLocation);
+		});
+	}
+	function clear() {
+		loopPoints.forEach((loopPoint) => loopPoint.translate.clear());
+	}
+	return {
+		canLoop,
+		clear,
+		loop,
+		loopPoints
+	};
+}
+function SlidesHandler(container, eventHandler, watchSlides) {
+	let mutationObserver;
+	let destroyed = false;
+	function init(emblaApi) {
+		if (!watchSlides) return;
+		function defaultCallback(mutations) {
+			for (const mutation of mutations) if (mutation.type === "childList") {
+				emblaApi.reInit();
+				eventHandler.emit("slidesChanged");
+				break;
+			}
+		}
+		mutationObserver = new MutationObserver((mutations) => {
+			if (destroyed) return;
+			if (isBoolean(watchSlides) || watchSlides(emblaApi, mutations)) defaultCallback(mutations);
+		});
+		mutationObserver.observe(container, { childList: true });
+	}
+	function destroy() {
+		if (mutationObserver) mutationObserver.disconnect();
+		destroyed = true;
+	}
+	return {
+		init,
+		destroy
+	};
+}
+function SlidesInView(container, slides, eventHandler, threshold) {
+	const intersectionEntryMap = {};
+	let inViewCache = null;
+	let notInViewCache = null;
+	let intersectionObserver;
+	let destroyed = false;
+	function init() {
+		intersectionObserver = new IntersectionObserver((entries) => {
+			if (destroyed) return;
+			entries.forEach((entry) => {
+				const index = slides.indexOf(entry.target);
+				intersectionEntryMap[index] = entry;
+			});
+			inViewCache = null;
+			notInViewCache = null;
+			eventHandler.emit("slidesInView");
+		}, {
+			root: container.parentElement,
+			threshold
+		});
+		slides.forEach((slide) => intersectionObserver.observe(slide));
+	}
+	function destroy() {
+		if (intersectionObserver) intersectionObserver.disconnect();
+		destroyed = true;
+	}
+	function createInViewList(inView) {
+		return objectKeys(intersectionEntryMap).reduce((list, slideIndex) => {
+			const index = parseInt(slideIndex);
+			const { isIntersecting } = intersectionEntryMap[index];
+			if (inView && isIntersecting || !inView && !isIntersecting) list.push(index);
+			return list;
+		}, []);
+	}
+	function get(inView = true) {
+		if (inView && inViewCache) return inViewCache;
+		if (!inView && notInViewCache) return notInViewCache;
+		const slideIndexes = createInViewList(inView);
+		if (inView) inViewCache = slideIndexes;
+		if (!inView) notInViewCache = slideIndexes;
+		return slideIndexes;
+	}
+	return {
+		init,
+		destroy,
+		get
+	};
+}
+function SlideSizes(axis, containerRect, slideRects, slides, readEdgeGap, ownerWindow) {
+	const { measureSize, startEdge, endEdge } = axis;
+	const withEdgeGap = slideRects[0] && readEdgeGap;
+	const startGap = measureStartGap();
+	const endGap = measureEndGap();
+	const slideSizes = slideRects.map(measureSize);
+	const slideSizesWithGaps = measureWithGaps();
+	function measureStartGap() {
+		if (!withEdgeGap) return 0;
+		const slideRect = slideRects[0];
+		return mathAbs(containerRect[startEdge] - slideRect[startEdge]);
+	}
+	function measureEndGap() {
+		if (!withEdgeGap) return 0;
+		const style = ownerWindow.getComputedStyle(arrayLast(slides));
+		return parseFloat(style.getPropertyValue(`margin-${endEdge}`));
+	}
+	function measureWithGaps() {
+		return slideRects.map((rect, index, rects) => {
+			const isFirst = !index;
+			const isLast = arrayIsLastIndex(rects, index);
+			if (isFirst) return slideSizes[index] + startGap;
+			if (isLast) return slideSizes[index] + endGap;
+			return rects[index + 1][startEdge] - rect[startEdge];
+		}).map(mathAbs);
+	}
+	return {
+		slideSizes,
+		slideSizesWithGaps,
+		startGap,
+		endGap
+	};
+}
+function SlidesToScroll(axis, viewSize, slidesToScroll, loop, containerRect, slideRects, startGap, endGap, pixelTolerance) {
+	const { startEdge, endEdge, direction } = axis;
+	const groupByNumber = isNumber(slidesToScroll);
+	function byNumber(array, groupSize) {
+		return arrayKeys(array).filter((i) => i % groupSize === 0).map((i) => array.slice(i, i + groupSize));
+	}
+	function bySize(array) {
+		if (!array.length) return [];
+		return arrayKeys(array).reduce((groups, rectB, index) => {
+			const rectA = arrayLast(groups) || 0;
+			const isFirst = rectA === 0;
+			const isLast = rectB === arrayLastIndex(array);
+			const edgeA = containerRect[startEdge] - slideRects[rectA][startEdge];
+			const edgeB = containerRect[startEdge] - slideRects[rectB][endEdge];
+			const gapA = !loop && isFirst ? direction(startGap) : 0;
+			const chunkSize = mathAbs(edgeB - (!loop && isLast ? direction(endGap) : 0) - (edgeA + gapA));
+			if (index && chunkSize > viewSize + pixelTolerance) groups.push(rectB);
+			if (isLast) groups.push(array.length);
+			return groups;
+		}, []).map((currentSize, index, groups) => {
+			const previousSize = Math.max(groups[index - 1] || 0);
+			return array.slice(previousSize, currentSize);
+		});
+	}
+	function groupSlides(array) {
+		return groupByNumber ? byNumber(array, slidesToScroll) : bySize(array);
+	}
+	return { groupSlides };
+}
+function Engine(root, container, slides, ownerDocument, ownerWindow, options, eventHandler) {
+	const { align, axis: scrollAxis, direction, startIndex, loop, duration, dragFree, dragThreshold, inViewThreshold, slidesToScroll: groupSlides, skipSnaps, containScroll, watchResize, watchSlides, watchDrag, watchFocus } = options;
+	const pixelTolerance = 2;
+	const nodeRects = NodeRects();
+	const containerRect = nodeRects.measure(container);
+	const slideRects = slides.map(nodeRects.measure);
+	const axis = Axis(scrollAxis, direction);
+	const viewSize = axis.measureSize(containerRect);
+	const percentOfView = PercentOfView(viewSize);
+	const alignment = Alignment(align, viewSize);
+	const containSnaps = !loop && !!containScroll;
+	const { slideSizes, slideSizesWithGaps, startGap, endGap } = SlideSizes(axis, containerRect, slideRects, slides, loop || !!containScroll, ownerWindow);
+	const slidesToScroll = SlidesToScroll(axis, viewSize, groupSlides, loop, containerRect, slideRects, startGap, endGap, pixelTolerance);
+	const { snaps, snapsAligned } = ScrollSnaps(axis, alignment, containerRect, slideRects, slidesToScroll);
+	const contentSize = -arrayLast(snaps) + arrayLast(slideSizesWithGaps);
+	const { snapsContained, scrollContainLimit } = ScrollContain(viewSize, contentSize, snapsAligned, containScroll, pixelTolerance);
+	const scrollSnaps = containSnaps ? snapsContained : snapsAligned;
+	const { limit } = ScrollLimit(contentSize, scrollSnaps, loop);
+	const index = Counter(arrayLastIndex(scrollSnaps), startIndex, loop);
+	const indexPrevious = index.clone();
+	const slideIndexes = arrayKeys(slides);
+	const update = ({ dragHandler, scrollBody, scrollBounds, options: { loop } }) => {
+		if (!loop) scrollBounds.constrain(dragHandler.pointerDown());
+		scrollBody.seek();
+	};
+	const render = ({ scrollBody, translate, location, offsetLocation, previousLocation, scrollLooper, slideLooper, dragHandler, animation, eventHandler, scrollBounds, options: { loop } }, alpha) => {
+		const shouldSettle = scrollBody.settled();
+		const withinBounds = !scrollBounds.shouldConstrain();
+		const hasSettled = loop ? shouldSettle : shouldSettle && withinBounds;
+		const hasSettledAndIdle = hasSettled && !dragHandler.pointerDown();
+		if (hasSettledAndIdle) animation.stop();
+		const interpolatedLocation = location.get() * alpha + previousLocation.get() * (1 - alpha);
+		offsetLocation.set(interpolatedLocation);
+		if (loop) {
+			scrollLooper.loop(scrollBody.direction());
+			slideLooper.loop();
+		}
+		translate.to(offsetLocation.get());
+		if (hasSettledAndIdle) eventHandler.emit("settle");
+		if (!hasSettled) eventHandler.emit("scroll");
+	};
+	const animation = Animations(ownerDocument, ownerWindow, () => update(engine), (alpha) => render(engine, alpha));
+	const friction = .68;
+	const startLocation = scrollSnaps[index.get()];
+	const location = Vector1D(startLocation);
+	const previousLocation = Vector1D(startLocation);
+	const offsetLocation = Vector1D(startLocation);
+	const target = Vector1D(startLocation);
+	const scrollBody = ScrollBody(location, offsetLocation, previousLocation, target, duration, friction);
+	const scrollTarget = ScrollTarget(loop, scrollSnaps, contentSize, limit, target);
+	const scrollTo = ScrollTo(animation, index, indexPrevious, scrollBody, scrollTarget, target, eventHandler);
+	const scrollProgress = ScrollProgress(limit);
+	const eventStore = EventStore();
+	const slidesInView = SlidesInView(container, slides, eventHandler, inViewThreshold);
+	const { slideRegistry } = SlideRegistry(containSnaps, containScroll, scrollSnaps, scrollContainLimit, slidesToScroll, slideIndexes);
+	const slideFocus = SlideFocus(root, slides, slideRegistry, scrollTo, scrollBody, eventStore, eventHandler, watchFocus);
+	const engine = {
+		ownerDocument,
+		ownerWindow,
+		eventHandler,
+		containerRect,
+		slideRects,
+		animation,
+		axis,
+		dragHandler: DragHandler(axis, root, ownerDocument, ownerWindow, target, DragTracker(axis, ownerWindow), location, animation, scrollTo, scrollBody, scrollTarget, index, eventHandler, percentOfView, dragFree, dragThreshold, skipSnaps, friction, watchDrag),
+		eventStore,
+		percentOfView,
+		index,
+		indexPrevious,
+		limit,
+		location,
+		offsetLocation,
+		previousLocation,
+		options,
+		resizeHandler: ResizeHandler(container, eventHandler, ownerWindow, slides, axis, watchResize, nodeRects),
+		scrollBody,
+		scrollBounds: ScrollBounds(limit, offsetLocation, target, scrollBody, percentOfView),
+		scrollLooper: ScrollLooper(contentSize, limit, offsetLocation, [
+			location,
+			offsetLocation,
+			previousLocation,
+			target
+		]),
+		scrollProgress,
+		scrollSnapList: scrollSnaps.map(scrollProgress.get),
+		scrollSnaps,
+		scrollTarget,
+		scrollTo,
+		slideLooper: SlideLooper(axis, viewSize, contentSize, slideSizes, slideSizesWithGaps, snaps, scrollSnaps, offsetLocation, slides),
+		slideFocus,
+		slidesHandler: SlidesHandler(container, eventHandler, watchSlides),
+		slidesInView,
+		slideIndexes,
+		slideRegistry,
+		slidesToScroll,
+		target,
+		translate: Translate(axis, container)
+	};
+	return engine;
+}
+function EventHandler() {
+	let listeners = {};
+	let api;
+	function init(emblaApi) {
+		api = emblaApi;
+	}
+	function getListeners(evt) {
+		return listeners[evt] || [];
+	}
+	function emit(evt) {
+		getListeners(evt).forEach((e) => e(api, evt));
+		return self;
+	}
+	function on(evt, cb) {
+		listeners[evt] = getListeners(evt).concat([cb]);
+		return self;
+	}
+	function off(evt, cb) {
+		listeners[evt] = getListeners(evt).filter((e) => e !== cb);
+		return self;
+	}
+	function clear() {
+		listeners = {};
+	}
+	const self = {
+		init,
+		emit,
+		off,
+		on,
+		clear
+	};
+	return self;
+}
+var defaultOptions = {
+	align: "center",
+	axis: "x",
+	container: null,
+	slides: null,
+	containScroll: "trimSnaps",
+	direction: "ltr",
+	slidesToScroll: 1,
+	inViewThreshold: 0,
+	breakpoints: {},
+	dragFree: false,
+	dragThreshold: 10,
+	loop: false,
+	skipSnaps: false,
+	duration: 25,
+	startIndex: 0,
+	active: true,
+	watchDrag: true,
+	watchResize: true,
+	watchSlides: true,
+	watchFocus: true
+};
+function OptionsHandler(ownerWindow) {
+	function mergeOptions(optionsA, optionsB) {
+		return objectsMergeDeep(optionsA, optionsB || {});
+	}
+	function optionsAtMedia(options) {
+		const optionsAtMedia = options.breakpoints || {};
+		return mergeOptions(options, objectKeys(optionsAtMedia).filter((media) => ownerWindow.matchMedia(media).matches).map((media) => optionsAtMedia[media]).reduce((a, mediaOption) => mergeOptions(a, mediaOption), {}));
+	}
+	function optionsMediaQueries(optionsList) {
+		return optionsList.map((options) => objectKeys(options.breakpoints || {})).reduce((acc, mediaQueries) => acc.concat(mediaQueries), []).map(ownerWindow.matchMedia);
+	}
+	return {
+		mergeOptions,
+		optionsAtMedia,
+		optionsMediaQueries
+	};
+}
+function PluginsHandler(optionsHandler) {
+	let activePlugins = [];
+	function init(emblaApi, plugins) {
+		activePlugins = plugins.filter(({ options }) => optionsHandler.optionsAtMedia(options).active !== false);
+		activePlugins.forEach((plugin) => plugin.init(emblaApi, optionsHandler));
+		return plugins.reduce((map, plugin) => Object.assign(map, { [plugin.name]: plugin }), {});
+	}
+	function destroy() {
+		activePlugins = activePlugins.filter((plugin) => plugin.destroy());
+	}
+	return {
+		init,
+		destroy
+	};
+}
+function EmblaCarousel(root, userOptions, userPlugins) {
+	const ownerDocument = root.ownerDocument;
+	const ownerWindow = ownerDocument.defaultView;
+	const optionsHandler = OptionsHandler(ownerWindow);
+	const pluginsHandler = PluginsHandler(optionsHandler);
+	const mediaHandlers = EventStore();
+	const eventHandler = EventHandler();
+	const { mergeOptions, optionsAtMedia, optionsMediaQueries } = optionsHandler;
+	const { on, off, emit } = eventHandler;
+	const reInit = reActivate;
+	let destroyed = false;
+	let engine;
+	let optionsBase = mergeOptions(defaultOptions, EmblaCarousel.globalOptions);
+	let options = mergeOptions(optionsBase);
+	let pluginList = [];
+	let pluginApis;
+	let container;
+	let slides;
+	function storeElements() {
+		const { container: userContainer, slides: userSlides } = options;
+		container = (isString(userContainer) ? root.querySelector(userContainer) : userContainer) || root.children[0];
+		const customSlides = isString(userSlides) ? container.querySelectorAll(userSlides) : userSlides;
+		slides = [].slice.call(customSlides || container.children);
+	}
+	function createEngine(options) {
+		const engine = Engine(root, container, slides, ownerDocument, ownerWindow, options, eventHandler);
+		if (options.loop && !engine.slideLooper.canLoop()) return createEngine(Object.assign({}, options, { loop: false }));
+		return engine;
+	}
+	function activate(withOptions, withPlugins) {
+		if (destroyed) return;
+		optionsBase = mergeOptions(optionsBase, withOptions);
+		options = optionsAtMedia(optionsBase);
+		pluginList = withPlugins || pluginList;
+		storeElements();
+		engine = createEngine(options);
+		optionsMediaQueries([optionsBase, ...pluginList.map(({ options }) => options)]).forEach((query) => mediaHandlers.add(query, "change", reActivate));
+		if (!options.active) return;
+		engine.translate.to(engine.location.get());
+		engine.animation.init();
+		engine.slidesInView.init();
+		engine.slideFocus.init(self);
+		engine.eventHandler.init(self);
+		engine.resizeHandler.init(self);
+		engine.slidesHandler.init(self);
+		if (engine.options.loop) engine.slideLooper.loop();
+		if (container.offsetParent && slides.length) engine.dragHandler.init(self);
+		pluginApis = pluginsHandler.init(self, pluginList);
+	}
+	function reActivate(withOptions, withPlugins) {
+		const startIndex = selectedScrollSnap();
+		deActivate();
+		activate(mergeOptions({ startIndex }, withOptions), withPlugins);
+		eventHandler.emit("reInit");
+	}
+	function deActivate() {
+		engine.dragHandler.destroy();
+		engine.eventStore.clear();
+		engine.translate.clear();
+		engine.slideLooper.clear();
+		engine.resizeHandler.destroy();
+		engine.slidesHandler.destroy();
+		engine.slidesInView.destroy();
+		engine.animation.destroy();
+		pluginsHandler.destroy();
+		mediaHandlers.clear();
+	}
+	function destroy() {
+		if (destroyed) return;
+		destroyed = true;
+		mediaHandlers.clear();
+		deActivate();
+		eventHandler.emit("destroy");
+		eventHandler.clear();
+	}
+	function scrollTo(index, jump, direction) {
+		if (!options.active || destroyed) return;
+		engine.scrollBody.useBaseFriction().useDuration(jump === true ? 0 : options.duration);
+		engine.scrollTo.index(index, direction || 0);
+	}
+	function scrollNext(jump) {
+		scrollTo(engine.index.add(1).get(), jump, -1);
+	}
+	function scrollPrev(jump) {
+		scrollTo(engine.index.add(-1).get(), jump, 1);
+	}
+	function canScrollNext() {
+		return engine.index.add(1).get() !== selectedScrollSnap();
+	}
+	function canScrollPrev() {
+		return engine.index.add(-1).get() !== selectedScrollSnap();
+	}
+	function scrollSnapList() {
+		return engine.scrollSnapList;
+	}
+	function scrollProgress() {
+		return engine.scrollProgress.get(engine.offsetLocation.get());
+	}
+	function selectedScrollSnap() {
+		return engine.index.get();
+	}
+	function previousScrollSnap() {
+		return engine.indexPrevious.get();
+	}
+	function slidesInView() {
+		return engine.slidesInView.get();
+	}
+	function slidesNotInView() {
+		return engine.slidesInView.get(false);
+	}
+	function plugins() {
+		return pluginApis;
+	}
+	function internalEngine() {
+		return engine;
+	}
+	function rootNode() {
+		return root;
+	}
+	function containerNode() {
+		return container;
+	}
+	function slideNodes() {
+		return slides;
+	}
+	const self = {
+		canScrollNext,
+		canScrollPrev,
+		containerNode,
+		internalEngine,
+		destroy,
+		off,
+		on,
+		emit,
+		plugins,
+		previousScrollSnap,
+		reInit,
+		rootNode,
+		scrollNext,
+		scrollPrev,
+		scrollProgress,
+		scrollSnapList,
+		scrollTo,
+		selectedScrollSnap,
+		slideNodes,
+		slidesInView,
+		slidesNotInView
+	};
+	activate(userOptions, userPlugins);
+	setTimeout(() => eventHandler.emit("init"), 0);
+	return self;
+}
+EmblaCarousel.globalOptions = void 0;
+//#endregion
+//#region ../../cache/modules/wms-base-eficiencia-c56b6/node_modules/.pnpm/embla-carousel-react@8.6.0_react@19.2.4/node_modules/embla-carousel-react/esm/embla-carousel-react.esm.js
+function useEmblaCarousel(options = {}, plugins = []) {
+	const storedOptions = (0, import_react.useRef)(options);
+	const storedPlugins = (0, import_react.useRef)(plugins);
+	const [emblaApi, setEmblaApi] = (0, import_react.useState)();
+	const [viewport, setViewport] = (0, import_react.useState)();
+	const reInit = (0, import_react.useCallback)(() => {
+		if (emblaApi) emblaApi.reInit(storedOptions.current, storedPlugins.current);
+	}, [emblaApi]);
+	(0, import_react.useEffect)(() => {
+		if (areOptionsEqual(storedOptions.current, options)) return;
+		storedOptions.current = options;
+		reInit();
+	}, [options, reInit]);
+	(0, import_react.useEffect)(() => {
+		if (arePluginsEqual(storedPlugins.current, plugins)) return;
+		storedPlugins.current = plugins;
+		reInit();
+	}, [plugins, reInit]);
+	(0, import_react.useEffect)(() => {
+		if (canUseDOM() && viewport) {
+			EmblaCarousel.globalOptions = useEmblaCarousel.globalOptions;
+			const newEmblaApi = EmblaCarousel(viewport, storedOptions.current, storedPlugins.current);
+			setEmblaApi(newEmblaApi);
+			return () => newEmblaApi.destroy();
+		} else setEmblaApi(void 0);
+	}, [viewport, setEmblaApi]);
+	return [setViewport, emblaApi];
+}
+useEmblaCarousel.globalOptions = void 0;
+//#endregion
+//#region src/components/ui/carousel.tsx
+var CarouselContext = import_react.createContext(null);
+function useCarousel() {
+	const context = import_react.useContext(CarouselContext);
+	if (!context) throw new Error("useCarousel must be used within a <Carousel />");
+	return context;
+}
+var Carousel = import_react.forwardRef(({ orientation = "horizontal", opts, setApi, plugins, className, children, ...props }, ref) => {
+	const [carouselRef, api] = useEmblaCarousel({
+		...opts,
+		axis: orientation === "horizontal" ? "x" : "y"
+	}, plugins);
+	const [canScrollPrev, setCanScrollPrev] = import_react.useState(false);
+	const [canScrollNext, setCanScrollNext] = import_react.useState(false);
+	const onSelect = import_react.useCallback((api) => {
+		if (!api) return;
+		setCanScrollPrev(api.canScrollPrev());
+		setCanScrollNext(api.canScrollNext());
+	}, []);
+	const scrollPrev = import_react.useCallback(() => {
+		api?.scrollPrev();
+	}, [api]);
+	const scrollNext = import_react.useCallback(() => {
+		api?.scrollNext();
+	}, [api]);
+	const handleKeyDown = import_react.useCallback((event) => {
+		if (event.key === "ArrowLeft") {
+			event.preventDefault();
+			scrollPrev();
+		} else if (event.key === "ArrowRight") {
+			event.preventDefault();
+			scrollNext();
+		}
+	}, [scrollPrev, scrollNext]);
+	import_react.useEffect(() => {
+		if (!api || !setApi) return;
+		setApi(api);
+	}, [api, setApi]);
+	import_react.useEffect(() => {
+		if (!api) return;
+		onSelect(api);
+		api.on("reInit", onSelect);
+		api.on("select", onSelect);
+		return () => {
+			api?.off("select", onSelect);
+		};
+	}, [api, onSelect]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CarouselContext.Provider, {
+		"data-uid": "src/components/ui/carousel.tsx:109:5",
+		"data-prohibitions": "[editContent]",
+		value: {
+			carouselRef,
+			api,
+			opts,
+			orientation: orientation || (opts?.axis === "y" ? "vertical" : "horizontal"),
+			scrollPrev,
+			scrollNext,
+			canScrollPrev,
+			canScrollNext
+		},
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+			"data-uid": "src/components/ui/carousel.tsx:121:7",
+			"data-prohibitions": "[editContent]",
+			ref,
+			onKeyDownCapture: handleKeyDown,
+			className: cn$1("relative", className),
+			role: "region",
+			"aria-roledescription": "carousel",
+			...props,
+			children
+		})
+	});
+});
+Carousel.displayName = "Carousel";
+var CarouselContent = import_react.forwardRef(({ className, ...props }, ref) => {
+	const { carouselRef, orientation } = useCarousel();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+		"data-uid": "src/components/ui/carousel.tsx:141:7",
+		"data-prohibitions": "[editContent]",
+		ref: carouselRef,
+		className: "overflow-hidden",
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+			"data-uid": "src/components/ui/carousel.tsx:142:9",
+			"data-prohibitions": "[editContent]",
+			ref,
+			className: cn$1("flex", orientation === "horizontal" ? "-ml-4" : "-mt-4 flex-col", className),
+			...props
+		})
+	});
+});
+CarouselContent.displayName = "CarouselContent";
+var CarouselItem = import_react.forwardRef(({ className, ...props }, ref) => {
+	const { orientation } = useCarousel();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+		"data-uid": "src/components/ui/carousel.tsx:162:7",
+		"data-prohibitions": "[editContent]",
+		ref,
+		role: "group",
+		"aria-roledescription": "slide",
+		className: cn$1("min-w-0 shrink-0 grow-0 basis-full", orientation === "horizontal" ? "pl-4" : "pt-4", className),
+		...props
+	});
+});
+CarouselItem.displayName = "CarouselItem";
+var CarouselPrevious = import_react.forwardRef(({ className, variant = "outline", size = "icon", ...props }, ref) => {
+	const { orientation, scrollPrev, canScrollPrev } = useCarousel();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+		"data-uid": "src/components/ui/carousel.tsx:183:7",
+		"data-prohibitions": "[editContent]",
+		ref,
+		variant,
+		size,
+		className: cn$1("absolute  h-8 w-8 rounded-full", orientation === "horizontal" ? "-left-12 top-1/2 -translate-y-1/2" : "-top-12 left-1/2 -translate-x-1/2 rotate-90", className),
+		disabled: !canScrollPrev,
+		onClick: scrollPrev,
+		...props,
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArrowLeft, {
+			"data-uid": "src/components/ui/carousel.tsx:198:9",
+			"data-prohibitions": "[editContent]",
+			className: "h-4 w-4"
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+			"data-uid": "src/components/ui/carousel.tsx:199:9",
+			"data-prohibitions": "[]",
+			className: "sr-only",
+			children: "Previous slide"
+		})]
+	});
+});
+CarouselPrevious.displayName = "CarouselPrevious";
+var CarouselNext = import_react.forwardRef(({ className, variant = "outline", size = "icon", ...props }, ref) => {
+	const { orientation, scrollNext, canScrollNext } = useCarousel();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+		"data-uid": "src/components/ui/carousel.tsx:211:7",
+		"data-prohibitions": "[editContent]",
+		ref,
+		variant,
+		size,
+		className: cn$1("absolute h-8 w-8 rounded-full", orientation === "horizontal" ? "-right-12 top-1/2 -translate-y-1/2" : "-bottom-12 left-1/2 -translate-x-1/2 rotate-90", className),
+		disabled: !canScrollNext,
+		onClick: scrollNext,
+		...props,
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArrowRight, {
+			"data-uid": "src/components/ui/carousel.tsx:226:9",
+			"data-prohibitions": "[editContent]",
+			className: "h-4 w-4"
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+			"data-uid": "src/components/ui/carousel.tsx:227:9",
+			"data-prohibitions": "[]",
+			className: "sr-only",
+			children: "Next slide"
+		})]
+	});
+});
+CarouselNext.displayName = "CarouselNext";
+//#endregion
+//#region src/components/ui/card.tsx
+var Card = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+	"data-uid": "src/components/ui/card.tsx:8:5",
+	"data-prohibitions": "[editContent]",
+	ref,
+	className: cn$1("rounded-lg border bg-card text-card-foreground shadow-sm", className),
+	...props
+}));
+Card.displayName = "Card";
+var CardHeader = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+	"data-uid": "src/components/ui/card.tsx:19:5",
+	"data-prohibitions": "[editContent]",
+	ref,
+	className: cn$1("flex flex-col space-y-1.5 p-6", className),
+	...props
+}));
+CardHeader.displayName = "CardHeader";
+var CardTitle = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+	"data-uid": "src/components/ui/card.tsx:26:5",
+	"data-prohibitions": "[editContent]",
+	ref,
+	className: cn$1("text-2xl font-semibold leading-none tracking-tight", className),
+	...props
+}));
+CardTitle.displayName = "CardTitle";
+var CardDescription = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+	"data-uid": "src/components/ui/card.tsx:37:5",
+	"data-prohibitions": "[editContent]",
+	ref,
+	className: cn$1("text-sm text-muted-foreground", className),
+	...props
+}));
+CardDescription.displayName = "CardDescription";
+var CardContent = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+	"data-uid": "src/components/ui/card.tsx:44:5",
+	"data-prohibitions": "[editContent]",
+	ref,
+	className: cn$1("p-6 pt-0", className),
+	...props
+}));
+CardContent.displayName = "CardContent";
+var CardFooter = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+	"data-uid": "src/components/ui/card.tsx:51:5",
+	"data-prohibitions": "[editContent]",
+	ref,
+	className: cn$1("flex items-center p-6 pt-0", className),
+	...props
+}));
+CardFooter.displayName = "CardFooter";
+//#endregion
+//#region src/components/sections/Testimonials.tsx
+var testimonials = [
+	{
+		name: "Carlos Silva",
+		role: "Gerente de Logística, TechLog",
+		content: "O guia transformou a maneira como encaramos a implementação do WMS na nossa empresa. Um passo a passo absolutamente essencial para não errar no Go-Live.",
+		avatar: "https://img.usecurling.com/ppl/thumbnail?gender=male&seed=10"
+	},
+	{
+		name: "Mariana Costa",
+		role: "Analista de Supply Chain",
+		content: "A didática do autor é incrível. Ele consegue traduzir os conceitos técnicos para a realidade do chão de fábrica. Reduzimos nosso tempo de separação em 30%.",
+		avatar: "https://img.usecurling.com/ppl/thumbnail?gender=female&seed=15"
+	},
+	{
+		name: "Roberto Mendes",
+		role: "Diretor de Operações",
+		content: "Recomendo este livro para toda minha equipe. É mais do que teoria, é vivência prática pura condensada de forma magistral e direta.",
+		avatar: "https://img.usecurling.com/ppl/thumbnail?gender=male&seed=22"
+	},
+	{
+		name: "Juliana Freitas",
+		role: "Consultora de Processos",
+		content: "Já participei de 4 implementações e ainda assim aprendi muito com a visão sistêmica trazida neste guia. A parte de integração com ERP é impecável.",
+		avatar: "https://img.usecurling.com/ppl/thumbnail?gender=female&seed=31"
+	}
+];
+function Testimonials() {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("section", {
+		"data-uid": "src/components/sections/Testimonials.tsx:44:5",
+		"data-prohibitions": "[editContent]",
+		id: "depoimentos",
+		className: "py-24 bg-slate-50 border-y border-slate-200 overflow-hidden",
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			"data-uid": "src/components/sections/Testimonials.tsx:48:7",
+			"data-prohibitions": "[editContent]",
+			className: "container mx-auto px-4 md:px-6",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				"data-uid": "src/components/sections/Testimonials.tsx:49:9",
+				"data-prohibitions": "[]",
+				className: "text-center mb-16 space-y-4",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
+					"data-uid": "src/components/sections/Testimonials.tsx:50:11",
+					"data-prohibitions": "[]",
+					className: "text-3xl font-bold tracking-tight md:text-4xl text-slate-900",
+					children: "Quem já leu e recomenda"
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					"data-uid": "src/components/sections/Testimonials.tsx:53:11",
+					"data-prohibitions": "[]",
+					className: "text-lg text-slate-600 max-w-2xl mx-auto",
+					children: "Veja o impacto que o Guia Masterclass de Implementação WMS tem gerado nas operações logísticas pelo Brasil."
+				})]
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				"data-uid": "src/components/sections/Testimonials.tsx:59:9",
+				"data-prohibitions": "[editContent]",
+				className: "max-w-5xl mx-auto px-8 sm:px-12 relative",
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Carousel, {
+					"data-uid": "src/components/sections/Testimonials.tsx:60:11",
+					"data-prohibitions": "[editContent]",
+					opts: {
+						align: "start",
+						loop: true
+					},
+					className: "w-full",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CarouselContent, {
+						"data-uid": "src/components/sections/Testimonials.tsx:67:13",
+						"data-prohibitions": "[editContent]",
+						className: "-ml-4",
+						children: testimonials.map((item, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CarouselItem, {
+							"data-uid": "src/components/sections/Testimonials.tsx:69:17",
+							"data-prohibitions": "[editContent]",
+							className: "pl-4 md:basis-1/2 lg:basis-1/2",
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Card, {
+								"data-uid": "src/components/sections/Testimonials.tsx:70:19",
+								"data-prohibitions": "[editContent]",
+								className: "h-full bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow",
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardContent, {
+									"data-uid": "src/components/sections/Testimonials.tsx:71:21",
+									"data-prohibitions": "[editContent]",
+									className: "p-8 flex flex-col h-full",
+									children: [
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Quote, {
+											"data-uid": "src/components/sections/Testimonials.tsx:72:23",
+											"data-prohibitions": "[editContent]",
+											className: "h-10 w-10 text-primary/20 mb-4 shrink-0"
+										}),
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+											"data-uid": "src/components/sections/Testimonials.tsx:73:23",
+											"data-prohibitions": "[editContent]",
+											className: "flex space-x-1 mb-4",
+											children: [
+												1,
+												2,
+												3,
+												4,
+												5
+											].map((star) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Star, {
+												"data-uid": "src/components/sections/Testimonials.tsx:75:27",
+												"data-prohibitions": "[editContent]",
+												className: "h-4 w-4 fill-primary text-primary"
+											}, star))
+										}),
+										/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+											"data-uid": "src/components/sections/Testimonials.tsx:78:23",
+											"data-prohibitions": "[editContent]",
+											className: "text-slate-700 text-lg mb-8 flex-1 italic",
+											children: [
+												"\"",
+												item.content,
+												"\""
+											]
+										}),
+										/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+											"data-uid": "src/components/sections/Testimonials.tsx:79:23",
+											"data-prohibitions": "[editContent]",
+											className: "flex items-center space-x-4 mt-auto",
+											children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+												"data-uid": "src/components/sections/Testimonials.tsx:80:25",
+												"data-prohibitions": "[editContent]",
+												src: item.avatar,
+												alt: item.name,
+												className: "w-12 h-12 rounded-full object-cover ring-2 ring-primary/10"
+											}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+												"data-uid": "src/components/sections/Testimonials.tsx:85:25",
+												"data-prohibitions": "[editContent]",
+												children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+													"data-uid": "src/components/sections/Testimonials.tsx:86:27",
+													"data-prohibitions": "[editContent]",
+													className: "font-semibold text-slate-900",
+													children: item.name
+												}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+													"data-uid": "src/components/sections/Testimonials.tsx:87:27",
+													"data-prohibitions": "[editContent]",
+													className: "text-sm text-slate-500",
+													children: item.role
+												})]
+											})]
+										})
+									]
+								})
+							})
+						}, index))
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						"data-uid": "src/components/sections/Testimonials.tsx:95:13",
+						"data-prohibitions": "[]",
+						className: "hidden sm:block",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CarouselPrevious, {
+							"data-uid": "src/components/sections/Testimonials.tsx:96:15",
+							"data-prohibitions": "[editContent]",
+							className: "-left-12 bg-white border-slate-200 text-slate-600 hover:text-primary"
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CarouselNext, {
+							"data-uid": "src/components/sections/Testimonials.tsx:97:15",
+							"data-prohibitions": "[editContent]",
+							className: "-right-12 bg-white border-slate-200 text-slate-600 hover:text-primary"
+						})]
+					})]
+				})
+			})]
+		})
+	});
+}
+//#endregion
 //#region src/assets/autor-4c853.jpg
 var autor_4c853_default = "/assets/autor-4c853-WVgivwxb.jpg";
 //#endregion
@@ -25180,196 +27056,353 @@ function Author() {
 	});
 }
 //#endregion
-//#region src/components/ui/card.tsx
-var Card = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-	"data-uid": "src/components/ui/card.tsx:8:5",
-	"data-prohibitions": "[editContent]",
-	ref,
-	className: cn$1("rounded-lg border bg-card text-card-foreground shadow-sm", className),
-	...props
-}));
-Card.displayName = "Card";
-var CardHeader = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-	"data-uid": "src/components/ui/card.tsx:19:5",
-	"data-prohibitions": "[editContent]",
-	ref,
-	className: cn$1("flex flex-col space-y-1.5 p-6", className),
-	...props
-}));
-CardHeader.displayName = "CardHeader";
-var CardTitle = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-	"data-uid": "src/components/ui/card.tsx:26:5",
-	"data-prohibitions": "[editContent]",
-	ref,
-	className: cn$1("text-2xl font-semibold leading-none tracking-tight", className),
-	...props
-}));
-CardTitle.displayName = "CardTitle";
-var CardDescription = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-	"data-uid": "src/components/ui/card.tsx:37:5",
-	"data-prohibitions": "[editContent]",
-	ref,
-	className: cn$1("text-sm text-muted-foreground", className),
-	...props
-}));
-CardDescription.displayName = "CardDescription";
-var CardContent = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-	"data-uid": "src/components/ui/card.tsx:44:5",
-	"data-prohibitions": "[editContent]",
-	ref,
-	className: cn$1("p-6 pt-0", className),
-	...props
-}));
-CardContent.displayName = "CardContent";
-var CardFooter = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-	"data-uid": "src/components/ui/card.tsx:51:5",
-	"data-prohibitions": "[editContent]",
-	ref,
-	className: cn$1("flex items-center p-6 pt-0", className),
-	...props
-}));
-CardFooter.displayName = "CardFooter";
-//#endregion
-//#region src/components/sections/Blog.tsx
-var blogPosts = [
+//#region src/components/sections/FAQ.tsx
+var faqs = [
 	{
-		id: 1,
-		title: "A Importância de um WMS na Cadeia de Suprimentos",
-		excerpt: "Descubra como a implementação correta de um Sistema de Gerenciamento de Armazém pode transformar a eficiência operacional da sua empresa e reduzir custos de forma significativa.",
-		date: "10 Mar 2026",
-		link: "https://www.linkedin.com/company/guia-masterclass-de-implementacao-wms/",
-		imageUrl: "https://img.usecurling.com/p/400/250?q=warehouse&color=blue"
+		question: "Para quem é destinado este guia?",
+		answer: "Para gerentes de logística, analistas de supply chain, gerentes de projeto, líderes de operação e qualquer profissional envolvido direta ou indiretamente na seleção e implementação de um WMS."
 	},
 	{
-		id: 2,
-		title: "Os Desafios Iniciais da Implementação",
-		excerpt: "Muitos projetos de WMS falham não pela tecnologia, mas pela falta de preparação da equipe. Neste artigo, abordo os principais pontos de atenção antes do go-live.",
-		date: "05 Mar 2026",
-		link: "https://www.linkedin.com/company/guia-masterclass-de-implementacao-wms/",
-		imageUrl: "https://img.usecurling.com/p/400/250?q=teamwork&color=orange"
+		question: "Preciso ter conhecimento prévio avançado em TI?",
+		answer: "Não. O livro foi escrito de forma a conectar a visão de negócios e operações com a tecnologia. Abordamos a parte sistêmica de maneira clara, focada em processos e resultados ao invés de código."
 	},
 	{
-		id: 3,
-		title: "Integração do WMS com ERPs de Mercado",
-		excerpt: "Entenda por que a comunicação perfeita entre o seu sistema de gestão empresarial e o WMS é crucial para a integridade dos dados e o sucesso da operação.",
-		date: "28 Fev 2026",
-		link: "https://www.linkedin.com/company/guia-masterclass-de-implementacao-wms/",
-		imageUrl: "https://img.usecurling.com/p/400/250?q=technology&color=cyan"
+		question: "O livro aborda integrações com ERPs?",
+		answer: "Sim! Há um capítulo dedicado a explicar os fluxos de integração mais comuns (como recebimento, separação, e atualização de saldo) e as melhores práticas para garantir que WMS e ERP conversem sem falhas."
+	},
+	{
+		question: "Como o livro ajuda no \"Go-Live\"?",
+		answer: "Apresentamos um checklist robusto e estratégias de mitigação de risco para as fases de testes integrados, treinamento da equipe e a virada de chave, minimizando o impacto na operação real."
+	},
+	{
+		question: "O conteúdo se aplica a qualquer sistema WMS do mercado?",
+		answer: "Absolutamente. As metodologias, boas práticas, mapeamento de processos e KPIs descritos são agnósticos, ou seja, servem como base estrutural independente de você utilizar SAP EWM, Manhattan, Blue Yonder, TOTVS, Sankhya, etc."
 	}
 ];
-function Blog() {
+function FAQ() {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("section", {
-		"data-uid": "src/components/sections/Blog.tsx:44:5",
+		"data-uid": "src/components/sections/FAQ.tsx:38:5",
+		"data-prohibitions": "[editContent]",
+		id: "faq",
+		className: "py-24 bg-background border-t border-border/40",
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			"data-uid": "src/components/sections/FAQ.tsx:39:7",
+			"data-prohibitions": "[editContent]",
+			className: "container mx-auto px-4 md:px-6 max-w-3xl",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				"data-uid": "src/components/sections/FAQ.tsx:40:9",
+				"data-prohibitions": "[]",
+				className: "text-center mb-12 space-y-4",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
+					"data-uid": "src/components/sections/FAQ.tsx:41:11",
+					"data-prohibitions": "[]",
+					className: "text-3xl font-bold tracking-tight md:text-4xl",
+					children: "Perguntas Frequentes"
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					"data-uid": "src/components/sections/FAQ.tsx:42:11",
+					"data-prohibitions": "[]",
+					className: "text-lg text-muted-foreground",
+					children: "Tire suas principais dúvidas sobre o conteúdo e formato do Guia Masterclass."
+				})]
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Accordion, {
+				"data-uid": "src/components/sections/FAQ.tsx:47:9",
+				"data-prohibitions": "[editContent]",
+				type: "single",
+				collapsible: true,
+				className: "w-full",
+				children: faqs.map((faq, i) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AccordionItem, {
+					"data-uid": "src/components/sections/FAQ.tsx:49:13",
+					"data-prohibitions": "[editContent]",
+					value: `item-${i}`,
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AccordionTrigger, {
+						"data-uid": "src/components/sections/FAQ.tsx:50:15",
+						"data-prohibitions": "[editContent]",
+						className: "text-left text-lg font-medium hover:text-primary py-5",
+						children: faq.question
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AccordionContent, {
+						"data-uid": "src/components/sections/FAQ.tsx:53:15",
+						"data-prohibitions": "[editContent]",
+						className: "text-base text-muted-foreground leading-relaxed pb-5",
+						children: faq.answer
+					})]
+				}, i))
+			})]
+		})
+	});
+}
+//#endregion
+//#region src/components/ui/input.tsx
+var Input = import_react.forwardRef(({ className, type, ...props }, ref) => {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+		"data-uid": "src/components/ui/input.tsx:9:7",
+		"data-prohibitions": "[editContent]",
+		type,
+		className: cn$1("flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm", className),
+		ref,
+		...props
+	});
+});
+Input.displayName = "Input";
+//#endregion
+//#region src/components/sections/Newsletter.tsx
+function Newsletter() {
+	const [email, setEmail] = (0, import_react.useState)("");
+	const { toast } = useToast();
+	const handleSubmit = (e) => {
+		e.preventDefault();
+		if (!email) return;
+		toast({
+			title: "Inscrição confirmada com sucesso!",
+			description: "Você passará a receber nossas atualizações sobre WMS e logística."
+		});
+		setEmail("");
+	};
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("section", {
+		"data-uid": "src/components/sections/Newsletter.tsx:23:5",
+		"data-prohibitions": "[]",
+		className: "py-24 bg-primary/5 border-y border-primary/10",
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+			"data-uid": "src/components/sections/Newsletter.tsx:24:7",
+			"data-prohibitions": "[]",
+			className: "container mx-auto px-4 md:px-6",
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				"data-uid": "src/components/sections/Newsletter.tsx:25:9",
+				"data-prohibitions": "[]",
+				className: "flex flex-col items-center text-center max-w-2xl mx-auto space-y-6",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+						"data-uid": "src/components/sections/Newsletter.tsx:26:11",
+						"data-prohibitions": "[]",
+						className: "inline-flex items-center justify-center p-3 bg-primary/10 rounded-full mb-2",
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Mail, {
+							"data-uid": "src/components/sections/Newsletter.tsx:27:13",
+							"data-prohibitions": "[editContent]",
+							className: "h-6 w-6 text-primary"
+						})
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
+						"data-uid": "src/components/sections/Newsletter.tsx:29:11",
+						"data-prohibitions": "[]",
+						className: "text-3xl font-bold tracking-tight md:text-4xl",
+						children: "Assine nossa Newsletter"
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						"data-uid": "src/components/sections/Newsletter.tsx:30:11",
+						"data-prohibitions": "[]",
+						className: "text-lg text-muted-foreground",
+						children: "Receba artigos exclusivos, dicas práticas de implementação e novidades sobre o mundo do WMS diretamente na sua caixa de entrada."
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", {
+						"data-uid": "src/components/sections/Newsletter.tsx:35:11",
+						"data-prohibitions": "[]",
+						onSubmit: handleSubmit,
+						className: "w-full flex flex-col sm:flex-row gap-3 mt-4",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+							"data-uid": "src/components/sections/Newsletter.tsx:36:13",
+							"data-prohibitions": "[editContent]",
+							type: "email",
+							placeholder: "Seu melhor e-mail",
+							className: "h-12 bg-background text-base",
+							value: email,
+							onChange: (e) => setEmail(e.target.value),
+							required: true
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+							"data-uid": "src/components/sections/Newsletter.tsx:44:13",
+							"data-prohibitions": "[]",
+							type: "submit",
+							size: "lg",
+							className: "h-12 sm:w-auto w-full",
+							children: "Inscrever-se"
+						})]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						"data-uid": "src/components/sections/Newsletter.tsx:48:11",
+						"data-prohibitions": "[]",
+						className: "text-sm text-muted-foreground mt-4",
+						children: "Prometemos não enviar spam. Você pode cancelar sua inscrição a qualquer momento."
+					})
+				]
+			})
+		})
+	});
+}
+//#endregion
+//#region src/data/blog.ts
+var blogPosts = [
+	{
+		id: "1",
+		slug: "importancia-wms-cadeia-suprimentos",
+		title: "A Importância de um WMS na Cadeia de Suprimentos",
+		excerpt: "Descubra como a implementação correta de um Sistema de Gerenciamento de Armazém pode transformar a eficiência operacional da sua empresa e reduzir custos de forma significativa.",
+		content: [
+			"Em um mercado cada vez mais competitivo, a eficiência logística deixou de ser um diferencial e se tornou uma exigência de sobrevivência. A capacidade de entregar o produto certo, no momento exato e com o menor custo possível, dita as regras do jogo.",
+			"O WMS (Warehouse Management System) surge como o cérebro dessa operação. Ele não apenas registra onde um produto está armazenado, mas orquestra ativamente cada movimento de entrada, armazenamento e saída de mercadorias. Ao contrário de um ERP tradicional, o WMS é focado na execução e na otimização de cada segundo do operador no chão de fábrica.",
+			"Com um sistema adequado, as empresas experimentam uma redução drástica em erros de separação, o que diminui devoluções e aumenta a satisfação do cliente. Além disso, a gestão de inventário passa a ser em tempo real, permitindo a otimização do espaço físico do armazém e a redução de perdas por validade ou obsolescência.",
+			"Contudo, a tecnologia sozinha não faz milagres. A implementação requer um profundo entendimento dos processos atuais e a coragem para reestruturá-los. Preparar a equipe, mapear fluxos e garantir integrações precisas são etapas tão importantes quanto a escolha do software. No Guia Masterclass, exploramos a fundo cada uma dessas etapas para garantir um Go-Live sem sobressaltos."
+		],
+		date: "10 Mar 2026",
+		readTime: "5 min",
+		imageUrl: "https://img.usecurling.com/p/800/400?q=warehouse&color=blue",
+		author: "Eduardo Canal"
+	},
+	{
+		id: "2",
+		slug: "desafios-iniciais-implementacao",
+		title: "Os Desafios Iniciais da Implementação",
+		excerpt: "Muitos projetos de WMS falham não pela tecnologia, mas pela falta de preparação da equipe. Neste artigo, abordo os principais pontos de atenção antes do go-live.",
+		content: [
+			"A decisão de implementar um WMS é geralmente acompanhada de altas expectativas: aumento de produtividade, redução de custos e operações fluídas. Porém, o caminho entre a compra do software e a sua operação plena está repleto de armadilhas que podem custar muito caro à organização.",
+			"Um dos maiores erros é subestimar o impacto cultural. Operadores acostumados com processos manuais ou sistemas legados tendem a resistir à mudança. O uso de coletores de dados, o registro minucioso de cada atividade e a dependência de tarefas dirigidas pelo sistema exigem uma mudança de mentalidade e um treinamento extensivo e contínuo.",
+			"Outro desafio gigantesco é o saneamento de dados. Se o cadastro de produtos estiver incorreto — pesos, dimensões, unidades de medida (fatores de conversão) e códigos de barras inválidos — o WMS tomará decisões baseadas em informações falsas. O resultado é o caos estruturado: paletes que não cabem nas posições indicadas e separações incorretas.",
+			"Por isso, a fase de planejamento é vital. Antes de qualquer configuração, é preciso mapear o \"As-Is\" (como a operação funciona hoje) e desenhar o \"To-Be\" (como funcionará com o WMS). Somente após essa análise de lacunas (Gap Analysis) e alinhamento com todas as partes interessadas, a tecnologia deve entrar em cena."
+		],
+		date: "05 Mar 2026",
+		readTime: "4 min",
+		imageUrl: "https://img.usecurling.com/p/800/400?q=teamwork&color=orange",
+		author: "Eduardo Canal"
+	},
+	{
+		id: "3",
+		slug: "integracao-wms-erps-mercado",
+		title: "Integração do WMS com ERPs de Mercado",
+		excerpt: "Entenda por que a comunicação perfeita entre o seu sistema de gestão empresarial e o WMS é crucial para a integridade dos dados e o sucesso da operação.",
+		content: [
+			"Um WMS isolado é como um excelente maestro regendo uma orquestra surda. Para que o armazém funcione em harmonia com as vendas, compras e o setor financeiro, a integração entre o WMS e o ERP (Enterprise Resource Planning) deve ser não apenas técnica, mas conceitualmente impecável.",
+			"Os fluxos de dados entre as plataformas costumam ser bidirecionais. O ERP envia os dados mestres (cadastros de itens, fornecedores, clientes), pedidos de compra (inbound) e de venda (outbound). O WMS, por sua vez, devolve a confirmação de recebimento (ASN, divergências), os embarques realizados e as movimentações internas que impactam o saldo contábil e fiscal do estoque.",
+			"Qualquer assincronia ou falha na integração pode gerar problemas severos: faturamento de itens que não estão fisicamente disponíveis, rupturas de estoque no e-commerce, ou caminhões parados na doca aguardando notas fiscais que não podem ser emitidas por inconsistência de saldo.",
+			"No livro \"Guia Masterclass de Implementação WMS\", dedico atenção especial a essas interfaces, abordando como estruturar os testes integrados e as melhores práticas para garantir que WMS e ERP sejam uma única fonte de verdade para a empresa."
+		],
+		date: "28 Fev 2026",
+		readTime: "6 min",
+		imageUrl: "https://img.usecurling.com/p/800/400?q=technology&color=cyan",
+		author: "Eduardo Canal"
+	}
+];
+//#endregion
+//#region src/components/sections/Blog.tsx
+function Blog() {
+	const recentPosts = blogPosts.slice(0, 3);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("section", {
+		"data-uid": "src/components/sections/Blog.tsx:18:5",
 		"data-prohibitions": "[editContent]",
 		id: "blog",
-		className: "py-20 bg-muted/30",
+		className: "py-24 bg-muted/30",
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-			"data-uid": "src/components/sections/Blog.tsx:45:7",
+			"data-uid": "src/components/sections/Blog.tsx:19:7",
 			"data-prohibitions": "[editContent]",
 			className: "container mx-auto px-4 md:px-6",
 			children: [
 				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					"data-uid": "src/components/sections/Blog.tsx:46:9",
+					"data-uid": "src/components/sections/Blog.tsx:20:9",
 					"data-prohibitions": "[]",
-					className: "flex flex-col items-center text-center space-y-4 mb-12",
+					className: "flex flex-col items-center text-center space-y-4 mb-16",
 					children: [
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-							"data-uid": "src/components/sections/Blog.tsx:47:11",
+							"data-uid": "src/components/sections/Blog.tsx:21:11",
 							"data-prohibitions": "[]",
-							className: "inline-flex items-center justify-center p-2 bg-primary/10 rounded-full mb-2 text-primary",
-							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Linkedin, {
-								"data-uid": "src/components/sections/Blog.tsx:48:13",
+							className: "inline-flex items-center justify-center p-3 bg-primary/10 rounded-full mb-2 text-primary",
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(BookOpen, {
+								"data-uid": "src/components/sections/Blog.tsx:22:13",
 								"data-prohibitions": "[editContent]",
 								className: "h-6 w-6"
 							})
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
-							"data-uid": "src/components/sections/Blog.tsx:50:11",
+							"data-uid": "src/components/sections/Blog.tsx:24:11",
 							"data-prohibitions": "[]",
 							className: "text-3xl font-bold tracking-tight sm:text-4xl",
 							children: "Artigos e Insights"
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-							"data-uid": "src/components/sections/Blog.tsx:51:11",
+							"data-uid": "src/components/sections/Blog.tsx:25:11",
 							"data-prohibitions": "[]",
 							className: "max-w-[700px] text-lg text-muted-foreground",
-							children: "Acompanhe as últimas publicações e discussões sobre gestão de armazéns diretamente do nosso LinkedIn."
+							children: "Acompanhe as últimas publicações, dicas valiosas e discussões sobre a gestão estratégica de armazéns."
 						})
 					]
 				}),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-					"data-uid": "src/components/sections/Blog.tsx:57:9",
+					"data-uid": "src/components/sections/Blog.tsx:31:9",
 					"data-prohibitions": "[editContent]",
 					className: "grid gap-8 md:grid-cols-2 lg:grid-cols-3",
-					children: blogPosts.map((post) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, {
-						"data-uid": "src/components/sections/Blog.tsx:59:13",
+					children: recentPosts.map((post) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, {
+						"data-uid": "src/components/sections/Blog.tsx:33:13",
 						"data-prohibitions": "[editContent]",
-						className: "flex flex-col overflow-hidden transition-all hover:shadow-md",
+						className: "flex flex-col overflow-hidden transition-all hover:shadow-md border-border/50 bg-background",
 						children: [
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-								"data-uid": "src/components/sections/Blog.tsx:63:15",
-								"data-prohibitions": "[]",
-								className: "aspect-video w-full overflow-hidden",
-								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
-									"data-uid": "src/components/sections/Blog.tsx:64:17",
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								"data-uid": "src/components/sections/Blog.tsx:37:15",
+								"data-prohibitions": "[editContent]",
+								className: "aspect-video w-full overflow-hidden relative group",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Link, {
+									"data-uid": "src/components/sections/Blog.tsx:38:17",
+									"data-prohibitions": "[editContent]",
+									to: `/blog/${post.slug}`,
+									className: "absolute inset-0 z-10",
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+										"data-uid": "src/components/sections/Blog.tsx:39:19",
+										"data-prohibitions": "[editContent]",
+										className: "sr-only",
+										children: ["Ler ", post.title]
+									})
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+									"data-uid": "src/components/sections/Blog.tsx:41:17",
 									"data-prohibitions": "[editContent]",
 									src: post.imageUrl,
 									alt: post.title,
-									className: "w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-								})
+									className: "w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+								})]
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardHeader, {
-								"data-uid": "src/components/sections/Blog.tsx:70:15",
+								"data-uid": "src/components/sections/Blog.tsx:47:15",
 								"data-prohibitions": "[editContent]",
+								className: "pb-3",
 								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-									"data-uid": "src/components/sections/Blog.tsx:71:17",
+									"data-uid": "src/components/sections/Blog.tsx:48:17",
 									"data-prohibitions": "[editContent]",
-									className: "text-sm text-muted-foreground mb-2",
+									className: "text-sm font-medium text-primary mb-2",
 									children: post.date
 								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardTitle, {
-									"data-uid": "src/components/sections/Blog.tsx:72:17",
+									"data-uid": "src/components/sections/Blog.tsx:49:17",
 									"data-prohibitions": "[editContent]",
 									className: "line-clamp-2 text-xl leading-tight hover:text-primary transition-colors",
-									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
-										"data-uid": "src/components/sections/Blog.tsx:73:19",
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Link, {
+										"data-uid": "src/components/sections/Blog.tsx:50:19",
 										"data-prohibitions": "[editContent]",
-										href: post.link,
-										target: "_blank",
-										rel: "noopener noreferrer",
+										to: `/blog/${post.slug}`,
 										children: post.title
 									})
 								})]
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardContent, {
-								"data-uid": "src/components/sections/Blog.tsx:78:15",
+								"data-uid": "src/components/sections/Blog.tsx:53:15",
 								"data-prohibitions": "[editContent]",
 								className: "flex-1",
 								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardDescription, {
-									"data-uid": "src/components/sections/Blog.tsx:79:17",
+									"data-uid": "src/components/sections/Blog.tsx:54:17",
 									"data-prohibitions": "[editContent]",
 									className: "line-clamp-3 text-base",
 									children: post.excerpt
 								})
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardFooter, {
-								"data-uid": "src/components/sections/Blog.tsx:81:15",
+								"data-uid": "src/components/sections/Blog.tsx:56:15",
 								"data-prohibitions": "[]",
+								className: "pt-2",
 								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
-									"data-uid": "src/components/sections/Blog.tsx:82:17",
+									"data-uid": "src/components/sections/Blog.tsx:57:17",
 									"data-prohibitions": "[]",
 									variant: "ghost",
-									className: "w-full justify-between",
+									className: "w-full justify-between group",
 									asChild: true,
-									children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("a", {
-										"data-uid": "src/components/sections/Blog.tsx:83:19",
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Link, {
+										"data-uid": "src/components/sections/Blog.tsx:58:19",
 										"data-prohibitions": "[]",
-										href: post.link,
-										target: "_blank",
-										rel: "noopener noreferrer",
-										children: ["Ler no LinkedIn", /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArrowRight, {
-											"data-uid": "src/components/sections/Blog.tsx:85:21",
+										to: `/blog/${post.slug}`,
+										children: ["Ler Artigo Completo", /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArrowRight, {
+											"data-uid": "src/components/sections/Blog.tsx:60:21",
 											"data-prohibitions": "[editContent]",
-											className: "h-4 w-4 ml-2"
+											className: "h-4 w-4 ml-2 transition-transform group-hover:translate-x-1"
 										})]
 									})
 								})
@@ -25378,26 +27411,25 @@ function Blog() {
 					}, post.id))
 				}),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-					"data-uid": "src/components/sections/Blog.tsx:93:9",
+					"data-uid": "src/components/sections/Blog.tsx:68:9",
 					"data-prohibitions": "[]",
-					className: "mt-12 text-center",
+					className: "mt-16 text-center",
 					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
-						"data-uid": "src/components/sections/Blog.tsx:94:11",
+						"data-uid": "src/components/sections/Blog.tsx:69:11",
 						"data-prohibitions": "[]",
 						size: "lg",
 						variant: "outline",
+						className: "h-14 px-8",
 						asChild: true,
-						children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("a", {
-							"data-uid": "src/components/sections/Blog.tsx:95:13",
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Link, {
+							"data-uid": "src/components/sections/Blog.tsx:70:13",
 							"data-prohibitions": "[]",
-							href: "https://www.linkedin.com/company/guia-masterclass-de-implementacao-wms/",
-							target: "_blank",
-							rel: "noopener noreferrer",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Linkedin, {
-								"data-uid": "src/components/sections/Blog.tsx:100:15",
+							to: "/blog",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BookOpen, {
+								"data-uid": "src/components/sections/Blog.tsx:71:15",
 								"data-prohibitions": "[editContent]",
 								className: "mr-2 h-5 w-5"
-							}), "Siga a página oficial no LinkedIn"]
+							}), "Ver todos os artigos do Blog"]
 						})
 					})
 				})
@@ -25563,39 +27595,194 @@ function FinalCTA() {
 //#region src/pages/Index.tsx
 function Index() {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		"data-uid": "src/pages/Index.tsx:11:5",
+		"data-uid": "src/pages/Index.tsx:14:5",
 		"data-prohibitions": "[]",
 		className: "flex flex-col w-full",
 		children: [
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Hero, {
-				"data-uid": "src/pages/Index.tsx:12:7",
-				"data-prohibitions": "[editContent]"
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AboutBook, {
-				"data-uid": "src/pages/Index.tsx:13:7",
-				"data-prohibitions": "[editContent]"
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CoreTopics, {
-				"data-uid": "src/pages/Index.tsx:14:7",
-				"data-prohibitions": "[editContent]"
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Author, {
 				"data-uid": "src/pages/Index.tsx:15:7",
 				"data-prohibitions": "[editContent]"
 			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Blog, {
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AboutBook, {
 				"data-uid": "src/pages/Index.tsx:16:7",
 				"data-prohibitions": "[editContent]"
 			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Social, {
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CoreTopics, {
 				"data-uid": "src/pages/Index.tsx:17:7",
 				"data-prohibitions": "[editContent]"
 			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FinalCTA, {
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Testimonials, {
 				"data-uid": "src/pages/Index.tsx:18:7",
+				"data-prohibitions": "[editContent]"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Author, {
+				"data-uid": "src/pages/Index.tsx:19:7",
+				"data-prohibitions": "[editContent]"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FAQ, {
+				"data-uid": "src/pages/Index.tsx:20:7",
+				"data-prohibitions": "[editContent]"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Newsletter, {
+				"data-uid": "src/pages/Index.tsx:21:7",
+				"data-prohibitions": "[editContent]"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Blog, {
+				"data-uid": "src/pages/Index.tsx:22:7",
+				"data-prohibitions": "[editContent]"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Social, {
+				"data-uid": "src/pages/Index.tsx:23:7",
+				"data-prohibitions": "[editContent]"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FinalCTA, {
+				"data-uid": "src/pages/Index.tsx:24:7",
 				"data-prohibitions": "[editContent]"
 			})
 		]
+	});
+}
+//#endregion
+//#region src/pages/BlogList.tsx
+function BlogList() {
+	(0, import_react.useEffect)(() => {
+		window.scrollTo(0, 0);
+	}, []);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		"data-uid": "src/pages/BlogList.tsx:21:5",
+		"data-prohibitions": "[editContent]",
+		className: "container mx-auto px-4 py-16 md:py-24 max-w-7xl",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			"data-uid": "src/pages/BlogList.tsx:22:7",
+			"data-prohibitions": "[]",
+			className: "max-w-3xl mb-16",
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					"data-uid": "src/pages/BlogList.tsx:23:9",
+					"data-prohibitions": "[]",
+					className: "inline-flex items-center justify-center p-3 bg-primary/10 rounded-full mb-6 text-primary",
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(BookOpen, {
+						"data-uid": "src/pages/BlogList.tsx:24:11",
+						"data-prohibitions": "[editContent]",
+						className: "h-6 w-6"
+					})
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
+					"data-uid": "src/pages/BlogList.tsx:26:9",
+					"data-prohibitions": "[]",
+					className: "text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6",
+					children: "Blog WMS Masterclass"
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					"data-uid": "src/pages/BlogList.tsx:29:9",
+					"data-prohibitions": "[]",
+					className: "text-xl text-muted-foreground leading-relaxed",
+					children: "Artigos, insights e melhores práticas sobre a jornada de implementação, otimização e gestão estratégica do seu Warehouse Management System."
+				})
+			]
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+			"data-uid": "src/pages/BlogList.tsx:35:7",
+			"data-prohibitions": "[editContent]",
+			className: "grid gap-10 md:grid-cols-2 lg:grid-cols-3",
+			children: blogPosts.map((post) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, {
+				"data-uid": "src/pages/BlogList.tsx:37:11",
+				"data-prohibitions": "[editContent]",
+				className: "flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-background border-border/60",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						"data-uid": "src/pages/BlogList.tsx:41:13",
+						"data-prohibitions": "[editContent]",
+						className: "aspect-video w-full overflow-hidden relative group",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Link, {
+							"data-uid": "src/pages/BlogList.tsx:42:15",
+							"data-prohibitions": "[editContent]",
+							to: `/blog/${post.slug}`,
+							className: "absolute inset-0 z-10",
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+								"data-uid": "src/pages/BlogList.tsx:43:17",
+								"data-prohibitions": "[editContent]",
+								className: "sr-only",
+								children: ["Ler artigo ", post.title]
+							})
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+							"data-uid": "src/pages/BlogList.tsx:45:15",
+							"data-prohibitions": "[editContent]",
+							src: post.imageUrl,
+							alt: post.title,
+							className: "w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+						})]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardHeader, {
+						"data-uid": "src/pages/BlogList.tsx:51:13",
+						"data-prohibitions": "[editContent]",
+						className: "pb-4",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							"data-uid": "src/pages/BlogList.tsx:52:15",
+							"data-prohibitions": "[editContent]",
+							className: "flex items-center justify-between text-sm font-medium text-muted-foreground mb-3",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+								"data-uid": "src/pages/BlogList.tsx:53:17",
+								"data-prohibitions": "[editContent]",
+								className: "text-primary",
+								children: post.date
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+								"data-uid": "src/pages/BlogList.tsx:54:17",
+								"data-prohibitions": "[editContent]",
+								className: "flex items-center",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Clock, {
+									"data-uid": "src/pages/BlogList.tsx:55:19",
+									"data-prohibitions": "[editContent]",
+									className: "w-3.5 h-3.5 mr-1"
+								}), post.readTime]
+							})]
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardTitle, {
+							"data-uid": "src/pages/BlogList.tsx:59:15",
+							"data-prohibitions": "[editContent]",
+							className: "line-clamp-2 text-2xl leading-tight hover:text-primary transition-colors",
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Link, {
+								"data-uid": "src/pages/BlogList.tsx:60:17",
+								"data-prohibitions": "[editContent]",
+								to: `/blog/${post.slug}`,
+								children: post.title
+							})
+						})]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardContent, {
+						"data-uid": "src/pages/BlogList.tsx:63:13",
+						"data-prohibitions": "[editContent]",
+						className: "flex-1",
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardDescription, {
+							"data-uid": "src/pages/BlogList.tsx:64:15",
+							"data-prohibitions": "[editContent]",
+							className: "line-clamp-3 text-base",
+							children: post.excerpt
+						})
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardFooter, {
+						"data-uid": "src/pages/BlogList.tsx:66:13",
+						"data-prohibitions": "[]",
+						className: "pt-2 pb-6",
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+							"data-uid": "src/pages/BlogList.tsx:67:15",
+							"data-prohibitions": "[]",
+							variant: "ghost",
+							className: "w-full justify-between group h-12",
+							asChild: true,
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Link, {
+								"data-uid": "src/pages/BlogList.tsx:68:17",
+								"data-prohibitions": "[]",
+								to: `/blog/${post.slug}`,
+								children: ["Ler Artigo Completo", /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArrowRight, {
+									"data-uid": "src/pages/BlogList.tsx:70:19",
+									"data-prohibitions": "[editContent]",
+									className: "h-5 w-5 ml-2 transition-transform group-hover:translate-x-1"
+								})]
+							})
+						})
+					})
+				]
+			}, post.id))
+		})]
 	});
 }
 //#endregion
@@ -25637,6 +27824,199 @@ var NotFound = () => {
 		})
 	});
 };
+//#endregion
+//#region src/pages/BlogPost.tsx
+function BlogPost() {
+	const { slug } = useParams();
+	const post = blogPosts.find((p) => p.slug === slug);
+	(0, import_react.useEffect)(() => {
+		window.scrollTo(0, 0);
+	}, [slug]);
+	if (!post) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(NotFound, {
+		"data-uid": "src/pages/BlogPost.tsx:17:12",
+		"data-prohibitions": "[editContent]"
+	});
+	const shareUrl = window.location.href;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("article", {
+		"data-uid": "src/pages/BlogPost.tsx:23:5",
+		"data-prohibitions": "[editContent]",
+		className: "container mx-auto px-4 py-12 md:py-20 max-w-4xl",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Link, {
+				"data-uid": "src/pages/BlogPost.tsx:24:7",
+				"data-prohibitions": "[]",
+				to: "/blog",
+				className: "inline-flex items-center font-medium text-muted-foreground hover:text-primary mb-10 transition-colors",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArrowLeft, {
+					"data-uid": "src/pages/BlogPost.tsx:28:9",
+					"data-prohibitions": "[editContent]",
+					className: "mr-2 h-4 w-4"
+				}), "Voltar para todos os artigos"]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("header", {
+				"data-uid": "src/pages/BlogPost.tsx:32:7",
+				"data-prohibitions": "[editContent]",
+				className: "mb-12",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
+					"data-uid": "src/pages/BlogPost.tsx:33:9",
+					"data-prohibitions": "[editContent]",
+					className: "text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-8 leading-tight text-foreground",
+					children: post.title
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					"data-uid": "src/pages/BlogPost.tsx:36:9",
+					"data-prohibitions": "[editContent]",
+					className: "flex flex-wrap items-center text-muted-foreground gap-6",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							"data-uid": "src/pages/BlogPost.tsx:37:11",
+							"data-prohibitions": "[editContent]",
+							className: "flex items-center font-medium text-foreground",
+							children: ["Por ", post.author]
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							"data-uid": "src/pages/BlogPost.tsx:38:11",
+							"data-prohibitions": "[editContent]",
+							className: "flex items-center",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Calendar, {
+								"data-uid": "src/pages/BlogPost.tsx:39:13",
+								"data-prohibitions": "[editContent]",
+								className: "mr-2 h-4 w-4"
+							}), post.date]
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							"data-uid": "src/pages/BlogPost.tsx:42:11",
+							"data-prohibitions": "[editContent]",
+							className: "flex items-center",
+							children: [
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Clock, {
+									"data-uid": "src/pages/BlogPost.tsx:43:13",
+									"data-prohibitions": "[editContent]",
+									className: "mr-2 h-4 w-4"
+								}),
+								post.readTime,
+								" leitura"
+							]
+						})
+					]
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				"data-uid": "src/pages/BlogPost.tsx:49:7",
+				"data-prohibitions": "[]",
+				className: "w-full rounded-2xl overflow-hidden mb-14 shadow-lg ring-1 ring-border/50",
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+					"data-uid": "src/pages/BlogPost.tsx:50:9",
+					"data-prohibitions": "[editContent]",
+					src: post.imageUrl,
+					alt: post.title,
+					className: "w-full h-auto object-cover aspect-[21/9]"
+				})
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				"data-uid": "src/pages/BlogPost.tsx:57:7",
+				"data-prohibitions": "[editContent]",
+				className: "prose prose-lg md:prose-xl max-w-none mb-16 text-foreground/90",
+				children: post.content.map((paragraph, idx) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					"data-uid": "src/pages/BlogPost.tsx:59:11",
+					"data-prohibitions": "[editContent]",
+					className: "mb-8 leading-relaxed text-lg md:text-xl font-serif",
+					children: paragraph
+				}, idx))
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				"data-uid": "src/pages/BlogPost.tsx:65:7",
+				"data-prohibitions": "[]",
+				className: "bg-primary/5 rounded-2xl p-8 md:p-12 mb-16 flex flex-col md:flex-row items-center justify-between gap-8 border border-primary/20 shadow-sm",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					"data-uid": "src/pages/BlogPost.tsx:66:9",
+					"data-prohibitions": "[]",
+					className: "text-center md:text-left",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", {
+						"data-uid": "src/pages/BlogPost.tsx:67:11",
+						"data-prohibitions": "[]",
+						className: "text-2xl md:text-3xl font-bold mb-3",
+						children: "Aprofunde seu conhecimento"
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						"data-uid": "src/pages/BlogPost.tsx:68:11",
+						"data-prohibitions": "[]",
+						className: "text-lg text-muted-foreground",
+						children: "Adquira o Guia Masterclass completo e transforme definitivamente a gestão do seu armazém."
+					})]
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+					"data-uid": "src/pages/BlogPost.tsx:73:9",
+					"data-prohibitions": "[]",
+					size: "lg",
+					className: "shrink-0 h-14 px-8 text-base shadow-lg",
+					asChild: true,
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("a", {
+						"data-uid": "src/pages/BlogPost.tsx:74:11",
+						"data-prohibitions": "[]",
+						href: "https://a.co/d/01x2227p",
+						target: "_blank",
+						rel: "noopener noreferrer",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ShoppingCart, {
+							"data-uid": "src/pages/BlogPost.tsx:75:13",
+							"data-prohibitions": "[editContent]",
+							className: "mr-2 h-5 w-5"
+						}), "Comprar na Amazon"]
+					})
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("footer", {
+				"data-uid": "src/pages/BlogPost.tsx:81:7",
+				"data-prohibitions": "[]",
+				className: "border-t border-border pt-10 flex flex-col sm:flex-row items-center justify-between gap-6",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					"data-uid": "src/pages/BlogPost.tsx:82:9",
+					"data-prohibitions": "[]",
+					className: "font-semibold text-lg text-foreground",
+					children: "Gostou do artigo? Compartilhe:"
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					"data-uid": "src/pages/BlogPost.tsx:83:9",
+					"data-prohibitions": "[]",
+					className: "flex space-x-4",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+						"data-uid": "src/pages/BlogPost.tsx:84:11",
+						"data-prohibitions": "[]",
+						variant: "outline",
+						className: "gap-2 hover:bg-[#0A66C2] hover:text-white transition-colors border-[#0A66C2] text-[#0A66C2]",
+						asChild: true,
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("a", {
+							"data-uid": "src/pages/BlogPost.tsx:89:13",
+							"data-prohibitions": "[]",
+							href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`,
+							target: "_blank",
+							rel: "noopener noreferrer",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Linkedin, {
+								"data-uid": "src/pages/BlogPost.tsx:94:15",
+								"data-prohibitions": "[editContent]",
+								className: "h-4 w-4"
+							}), " LinkedIn"]
+						})
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+						"data-uid": "src/pages/BlogPost.tsx:97:11",
+						"data-prohibitions": "[]",
+						variant: "outline",
+						className: "gap-2 hover:bg-[#1877F2] hover:text-white transition-colors border-[#1877F2] text-[#1877F2]",
+						asChild: true,
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("a", {
+							"data-uid": "src/pages/BlogPost.tsx:102:13",
+							"data-prohibitions": "[]",
+							href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
+							target: "_blank",
+							rel: "noopener noreferrer",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Facebook, {
+								"data-uid": "src/pages/BlogPost.tsx:107:15",
+								"data-prohibitions": "[editContent]",
+								className: "h-4 w-4"
+							}), " Facebook"]
+						})
+					})]
+				})]
+			})
+		]
+	});
+}
 //#endregion
 //#region ../../cache/modules/wms-base-eficiencia-c56b6/node_modules/.pnpm/@radix-ui+react-focus-scope@1.1.7_@types+react-dom@19.2.3_@types+react@19.2.14__@types+_f62f3af4ca2ba305a7aecf04c8534604/node_modules/@radix-ui/react-focus-scope/dist/index.mjs
 var AUTOFOCUS_ON_MOUNT = "focusScope.autoFocusOnMount";
@@ -27034,163 +29414,182 @@ SheetDescription.displayName = Description.displayName;
 //#region src/components/Layout.tsx
 function Layout() {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = (0, import_react.useState)(false);
+	const location = useLocation();
+	const isHome = location.pathname === "/";
+	(0, import_react.useEffect)(() => {
+		if (isHome && location.hash) setTimeout(() => {
+			const element = document.querySelector(location.hash);
+			if (element) element.scrollIntoView({ behavior: "smooth" });
+		}, 100);
+	}, [location, isHome]);
 	const navLinks = [
 		{
-			href: "#about",
+			id: "#about",
 			label: "Sobre o Livro"
 		},
 		{
-			href: "#topics",
-			label: "Tópicos Principais"
+			id: "#conteudo",
+			label: "Tópicos"
 		},
 		{
-			href: "#author",
-			label: "O Autor"
+			id: "#depoimentos",
+			label: "Depoimentos"
 		},
 		{
-			href: "#blog",
+			id: "#faq",
+			label: "FAQ"
+		},
+		{
+			id: "/blog",
 			label: "Blog"
-		},
-		{
-			href: "#contact",
-			label: "Contato"
 		}
 	];
-	const handleLinkClick = () => {
+	const handleLinkClick = (e, id) => {
 		setIsMobileMenuOpen(false);
+		if (id.startsWith("/")) return;
+		if (isHome) {
+			e.preventDefault();
+			const element = document.querySelector(id);
+			if (element) {
+				element.scrollIntoView({ behavior: "smooth" });
+				window.history.pushState(null, "", id);
+			}
+		}
 	};
+	const renderNavLinks = (className) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_jsx_runtime.Fragment, { children: navLinks.map((link) => link.id.startsWith("/") ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Link, {
+		"data-uid": "src/components/Layout.tsx:50:11",
+		"data-prohibitions": "[editContent]",
+		to: link.id,
+		className,
+		onClick: (e) => handleLinkClick(e, link.id),
+		children: link.label
+	}, link.id) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
+		"data-uid": "src/components/Layout.tsx:59:11",
+		"data-prohibitions": "[editContent]",
+		href: isHome ? link.id : `/${link.id}`,
+		className,
+		onClick: (e) => handleLinkClick(e, link.id),
+		children: link.label
+	}, link.id)) });
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		"data-uid": "src/components/Layout.tsx:23:5",
+		"data-uid": "src/components/Layout.tsx:73:5",
 		"data-prohibitions": "[editContent]",
 		className: "min-h-screen flex flex-col font-sans",
 		children: [
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("header", {
-				"data-uid": "src/components/Layout.tsx:24:7",
+				"data-uid": "src/components/Layout.tsx:74:7",
 				"data-prohibitions": "[editContent]",
 				className: "sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
 				children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					"data-uid": "src/components/Layout.tsx:25:9",
+					"data-uid": "src/components/Layout.tsx:75:9",
 					"data-prohibitions": "[editContent]",
 					className: "container mx-auto flex h-16 items-center justify-between px-4 md:px-6",
 					children: [
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Link, {
-							"data-uid": "src/components/Layout.tsx:26:11",
+							"data-uid": "src/components/Layout.tsx:76:11",
 							"data-prohibitions": "[]",
 							to: "/",
 							className: "flex items-center space-x-2",
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BookOpen, {
-								"data-uid": "src/components/Layout.tsx:27:13",
+								"data-uid": "src/components/Layout.tsx:77:13",
 								"data-prohibitions": "[editContent]",
 								className: "h-6 w-6 text-primary"
 							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-								"data-uid": "src/components/Layout.tsx:28:13",
+								"data-uid": "src/components/Layout.tsx:78:13",
 								"data-prohibitions": "[]",
 								className: "font-bold text-lg hidden sm:inline-block",
 								children: "WMS Masterclass"
 							})]
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("nav", {
-							"data-uid": "src/components/Layout.tsx:32:11",
+							"data-uid": "src/components/Layout.tsx:81:11",
 							"data-prohibitions": "[editContent]",
 							className: "hidden md:flex items-center space-x-6 text-sm font-medium",
-							children: [navLinks.map((link) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
-								"data-uid": "src/components/Layout.tsx:34:15",
-								"data-prohibitions": "[editContent]",
-								href: link.href,
-								className: "transition-colors hover:text-primary text-muted-foreground",
-								children: link.label
-							}, link.href)), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
-								"data-uid": "src/components/Layout.tsx:42:13",
+							children: [renderNavLinks("transition-colors hover:text-primary text-muted-foreground"), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+								"data-uid": "src/components/Layout.tsx:83:13",
 								"data-prohibitions": "[]",
 								size: "sm",
 								asChild: true,
 								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
-									"data-uid": "src/components/Layout.tsx:43:15",
+									"data-uid": "src/components/Layout.tsx:84:15",
 									"data-prohibitions": "[]",
 									href: "https://a.co/d/01x2227p",
 									target: "_blank",
 									rel: "noopener noreferrer",
-									children: "Comprar"
+									children: "Comprar na Amazon"
 								})
 							})]
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-							"data-uid": "src/components/Layout.tsx:50:11",
+							"data-uid": "src/components/Layout.tsx:90:11",
 							"data-prohibitions": "[editContent]",
 							className: "md:hidden",
 							children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Sheet, {
-								"data-uid": "src/components/Layout.tsx:51:13",
+								"data-uid": "src/components/Layout.tsx:91:13",
 								"data-prohibitions": "[editContent]",
 								open: isMobileMenuOpen,
 								onOpenChange: setIsMobileMenuOpen,
 								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SheetTrigger, {
-									"data-uid": "src/components/Layout.tsx:52:15",
+									"data-uid": "src/components/Layout.tsx:92:15",
 									"data-prohibitions": "[]",
 									asChild: true,
 									children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-										"data-uid": "src/components/Layout.tsx:53:17",
+										"data-uid": "src/components/Layout.tsx:93:17",
 										"data-prohibitions": "[]",
 										variant: "ghost",
 										size: "icon",
 										className: "h-9 w-9",
 										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Menu, {
-											"data-uid": "src/components/Layout.tsx:54:19",
+											"data-uid": "src/components/Layout.tsx:94:19",
 											"data-prohibitions": "[editContent]",
 											className: "h-5 w-5"
 										}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-											"data-uid": "src/components/Layout.tsx:55:19",
+											"data-uid": "src/components/Layout.tsx:95:19",
 											"data-prohibitions": "[]",
 											className: "sr-only",
 											children: "Toggle menu"
 										})]
 									})
 								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SheetContent, {
-									"data-uid": "src/components/Layout.tsx:58:15",
+									"data-uid": "src/components/Layout.tsx:98:15",
 									"data-prohibitions": "[editContent]",
 									side: "right",
 									children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-										"data-uid": "src/components/Layout.tsx:59:17",
+										"data-uid": "src/components/Layout.tsx:99:17",
 										"data-prohibitions": "[editContent]",
 										className: "flex flex-col space-y-6 mt-6",
 										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Link, {
-											"data-uid": "src/components/Layout.tsx:60:19",
+											"data-uid": "src/components/Layout.tsx:100:19",
 											"data-prohibitions": "[]",
 											to: "/",
 											className: "flex items-center space-x-2 mb-4",
-											onClick: handleLinkClick,
+											onClick: () => setIsMobileMenuOpen(false),
 											children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BookOpen, {
-												"data-uid": "src/components/Layout.tsx:65:21",
+												"data-uid": "src/components/Layout.tsx:105:21",
 												"data-prohibitions": "[editContent]",
 												className: "h-6 w-6 text-primary"
 											}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-												"data-uid": "src/components/Layout.tsx:66:21",
+												"data-uid": "src/components/Layout.tsx:106:21",
 												"data-prohibitions": "[]",
 												className: "font-bold text-lg",
 												children: "WMS Masterclass"
 											})]
 										}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("nav", {
-											"data-uid": "src/components/Layout.tsx:68:19",
+											"data-uid": "src/components/Layout.tsx:108:19",
 											"data-prohibitions": "[editContent]",
 											className: "flex flex-col space-y-4",
-											children: [navLinks.map((link) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
-												"data-uid": "src/components/Layout.tsx:70:23",
-												"data-prohibitions": "[editContent]",
-												href: link.href,
-												className: "text-base font-medium transition-colors hover:text-primary",
-												onClick: handleLinkClick,
-												children: link.label
-											}, link.href)), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-												"data-uid": "src/components/Layout.tsx:79:21",
+											children: [renderNavLinks("text-base font-medium transition-colors hover:text-primary"), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+												"data-uid": "src/components/Layout.tsx:110:21",
 												"data-prohibitions": "[]",
 												className: "pt-4 border-t",
 												children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
-													"data-uid": "src/components/Layout.tsx:80:23",
+													"data-uid": "src/components/Layout.tsx:111:23",
 													"data-prohibitions": "[]",
 													className: "w-full",
 													asChild: true,
-													onClick: handleLinkClick,
+													onClick: () => setIsMobileMenuOpen(false),
 													children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
-														"data-uid": "src/components/Layout.tsx:81:25",
+														"data-uid": "src/components/Layout.tsx:112:25",
 														"data-prohibitions": "[]",
 														href: "https://a.co/d/01x2227p",
 														target: "_blank",
@@ -27208,44 +29607,44 @@ function Layout() {
 				})
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("main", {
-				"data-uid": "src/components/Layout.tsx:94:7",
+				"data-uid": "src/components/Layout.tsx:125:7",
 				"data-prohibitions": "[]",
 				className: "flex-1",
 				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Outlet, {
-					"data-uid": "src/components/Layout.tsx:95:9",
+					"data-uid": "src/components/Layout.tsx:126:9",
 					"data-prohibitions": "[editContent]"
 				})
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("footer", {
-				"data-uid": "src/components/Layout.tsx:98:7",
+				"data-uid": "src/components/Layout.tsx:129:7",
 				"data-prohibitions": "[editContent]",
 				className: "border-t bg-muted/40 py-8 md:py-12",
 				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-					"data-uid": "src/components/Layout.tsx:99:9",
+					"data-uid": "src/components/Layout.tsx:130:9",
 					"data-prohibitions": "[editContent]",
 					className: "container mx-auto px-4 md:px-6",
 					children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						"data-uid": "src/components/Layout.tsx:100:11",
+						"data-uid": "src/components/Layout.tsx:131:11",
 						"data-prohibitions": "[editContent]",
 						className: "flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left",
 						children: [
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-								"data-uid": "src/components/Layout.tsx:101:13",
+								"data-uid": "src/components/Layout.tsx:132:13",
 								"data-prohibitions": "[]",
 								className: "flex items-center space-x-2",
 								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BookOpen, {
-									"data-uid": "src/components/Layout.tsx:102:15",
+									"data-uid": "src/components/Layout.tsx:133:15",
 									"data-prohibitions": "[editContent]",
 									className: "h-5 w-5 text-muted-foreground"
 								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-									"data-uid": "src/components/Layout.tsx:103:15",
+									"data-uid": "src/components/Layout.tsx:134:15",
 									"data-prohibitions": "[]",
 									className: "font-semibold text-muted-foreground",
 									children: "WMS Masterclass"
 								})]
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-								"data-uid": "src/components/Layout.tsx:105:13",
+								"data-uid": "src/components/Layout.tsx:136:13",
 								"data-prohibitions": "[editContent]",
 								className: "text-sm text-muted-foreground",
 								children: [
@@ -27255,28 +29654,28 @@ function Layout() {
 								]
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-								"data-uid": "src/components/Layout.tsx:108:13",
+								"data-uid": "src/components/Layout.tsx:139:13",
 								"data-prohibitions": "[]",
-								className: "flex space-x-4 text-sm text-muted-foreground",
+								className: "flex flex-wrap justify-center md:justify-end gap-x-6 gap-y-2 text-sm text-muted-foreground",
 								children: [
 									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
-										"data-uid": "src/components/Layout.tsx:109:15",
+										"data-uid": "src/components/Layout.tsx:140:15",
 										"data-prohibitions": "[]",
-										href: "#about",
+										href: isHome ? "#about" : "/#about",
 										className: "hover:underline hover:text-primary",
 										children: "Sobre"
 									}),
 									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
-										"data-uid": "src/components/Layout.tsx:112:15",
+										"data-uid": "src/components/Layout.tsx:146:15",
 										"data-prohibitions": "[]",
-										href: "#contact",
+										href: isHome ? "#faq" : "/#faq",
 										className: "hover:underline hover:text-primary",
-										children: "Contato"
+										children: "FAQ"
 									}),
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
-										"data-uid": "src/components/Layout.tsx:115:15",
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Link, {
+										"data-uid": "src/components/Layout.tsx:149:15",
 										"data-prohibitions": "[]",
-										href: "#blog",
+										to: "/blog",
 										className: "hover:underline hover:text-primary",
 										children: "Blog"
 									})
@@ -27292,49 +29691,69 @@ function Layout() {
 //#endregion
 //#region src/App.tsx
 var App = () => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(BrowserRouter, {
-	"data-uid": "src/App.tsx:10:3",
+	"data-uid": "src/App.tsx:12:3",
 	"data-prohibitions": "[]",
 	future: {
 		v7_startTransition: false,
 		v7_relativeSplatPath: false
 	},
 	children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(TooltipProvider, {
-		"data-uid": "src/App.tsx:11:5",
+		"data-uid": "src/App.tsx:13:5",
 		"data-prohibitions": "[]",
 		children: [
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Toaster$2, {
-				"data-uid": "src/App.tsx:12:7",
+				"data-uid": "src/App.tsx:14:7",
 				"data-prohibitions": "[editContent]"
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Toaster, {
-				"data-uid": "src/App.tsx:13:7",
+				"data-uid": "src/App.tsx:15:7",
 				"data-prohibitions": "[editContent]"
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Routes, {
-				"data-uid": "src/App.tsx:14:7",
+				"data-uid": "src/App.tsx:16:7",
 				"data-prohibitions": "[]",
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Route, {
-					"data-uid": "src/App.tsx:15:9",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Route, {
+					"data-uid": "src/App.tsx:17:9",
 					"data-prohibitions": "[]",
 					element: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Layout, {
-						"data-uid": "src/App.tsx:15:25",
+						"data-uid": "src/App.tsx:17:25",
 						"data-prohibitions": "[editContent]"
 					}),
-					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Route, {
-						"data-uid": "src/App.tsx:16:11",
-						"data-prohibitions": "[editContent]",
-						path: "/",
-						element: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Index, {
-							"data-uid": "src/App.tsx:16:36",
-							"data-prohibitions": "[editContent]"
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Route, {
+							"data-uid": "src/App.tsx:18:11",
+							"data-prohibitions": "[editContent]",
+							path: "/",
+							element: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Index, {
+								"data-uid": "src/App.tsx:18:36",
+								"data-prohibitions": "[editContent]"
+							})
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Route, {
+							"data-uid": "src/App.tsx:19:11",
+							"data-prohibitions": "[editContent]",
+							path: "/blog",
+							element: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(BlogList, {
+								"data-uid": "src/App.tsx:19:40",
+								"data-prohibitions": "[editContent]"
+							})
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Route, {
+							"data-uid": "src/App.tsx:20:11",
+							"data-prohibitions": "[editContent]",
+							path: "/blog/:slug",
+							element: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(BlogPost, {
+								"data-uid": "src/App.tsx:20:46",
+								"data-prohibitions": "[editContent]"
+							})
 						})
-					})
+					]
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Route, {
-					"data-uid": "src/App.tsx:18:9",
+					"data-uid": "src/App.tsx:22:9",
 					"data-prohibitions": "[editContent]",
 					path: "*",
 					element: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(NotFound, {
-						"data-uid": "src/App.tsx:18:34",
+						"data-uid": "src/App.tsx:22:34",
 						"data-prohibitions": "[editContent]"
 					})
 				})]
@@ -27350,4 +29769,4 @@ var App = () => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(BrowserRouter, {
 }));
 //#endregion
 
-//# sourceMappingURL=index-BtQ-fDH-.js.map
+//# sourceMappingURL=index-DGqD9ssM.js.map

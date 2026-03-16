@@ -1,23 +1,73 @@
-import { Link, Outlet } from 'react-router-dom'
+import { Link, Outlet, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { BookOpen, Menu } from 'lucide-react'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const location = useLocation()
+  const isHome = location.pathname === '/'
+
+  useEffect(() => {
+    if (isHome && location.hash) {
+      setTimeout(() => {
+        const element = document.querySelector(location.hash)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' })
+        }
+      }, 100)
+    }
+  }, [location, isHome])
 
   const navLinks = [
-    { href: '#about', label: 'Sobre o Livro' },
-    { href: '#topics', label: 'Tópicos Principais' },
-    { href: '#author', label: 'O Autor' },
-    { href: '#blog', label: 'Blog' },
-    { href: '#contact', label: 'Contato' },
+    { id: '#about', label: 'Sobre o Livro' },
+    { id: '#conteudo', label: 'Tópicos' },
+    { id: '#depoimentos', label: 'Depoimentos' },
+    { id: '#faq', label: 'FAQ' },
+    { id: '/blog', label: 'Blog' },
   ]
 
-  const handleLinkClick = () => {
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     setIsMobileMenuOpen(false)
+    if (id.startsWith('/')) {
+      return
+    }
+    if (isHome) {
+      e.preventDefault()
+      const element = document.querySelector(id)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' })
+        window.history.pushState(null, '', id)
+      }
+    }
   }
+
+  const renderNavLinks = (className: string) => (
+    <>
+      {navLinks.map((link) =>
+        link.id.startsWith('/') ? (
+          <Link
+            key={link.id}
+            to={link.id}
+            className={className}
+            onClick={(e) => handleLinkClick(e as any, link.id)}
+          >
+            {link.label}
+          </Link>
+        ) : (
+          <a
+            key={link.id}
+            href={isHome ? link.id : `/${link.id}`}
+            className={className}
+            onClick={(e) => handleLinkClick(e, link.id)}
+          >
+            {link.label}
+          </a>
+        ),
+      )}
+    </>
+  )
 
   return (
     <div className="min-h-screen flex flex-col font-sans">
@@ -28,25 +78,15 @@ export function Layout() {
             <span className="font-bold text-lg hidden sm:inline-block">WMS Masterclass</span>
           </Link>
 
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-            {navLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="transition-colors hover:text-primary text-muted-foreground"
-              >
-                {link.label}
-              </a>
-            ))}
+            {renderNavLinks('transition-colors hover:text-primary text-muted-foreground')}
             <Button size="sm" asChild>
               <a href="https://a.co/d/01x2227p" target="_blank" rel="noopener noreferrer">
-                Comprar
+                Comprar na Amazon
               </a>
             </Button>
           </nav>
 
-          {/* Mobile Navigation */}
           <div className="md:hidden">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -60,24 +100,15 @@ export function Layout() {
                   <Link
                     to="/"
                     className="flex items-center space-x-2 mb-4"
-                    onClick={handleLinkClick}
+                    onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <BookOpen className="h-6 w-6 text-primary" />
                     <span className="font-bold text-lg">WMS Masterclass</span>
                   </Link>
                   <nav className="flex flex-col space-y-4">
-                    {navLinks.map((link) => (
-                      <a
-                        key={link.href}
-                        href={link.href}
-                        className="text-base font-medium transition-colors hover:text-primary"
-                        onClick={handleLinkClick}
-                      >
-                        {link.label}
-                      </a>
-                    ))}
+                    {renderNavLinks('text-base font-medium transition-colors hover:text-primary')}
                     <div className="pt-4 border-t">
-                      <Button className="w-full" asChild onClick={handleLinkClick}>
+                      <Button className="w-full" asChild onClick={() => setIsMobileMenuOpen(false)}>
                         <a href="https://a.co/d/01x2227p" target="_blank" rel="noopener noreferrer">
                           Comprar na Amazon
                         </a>
@@ -105,16 +136,19 @@ export function Layout() {
             <p className="text-sm text-muted-foreground">
               &copy; {new Date().getFullYear()} Eduardo Canal. Todos os direitos reservados.
             </p>
-            <div className="flex space-x-4 text-sm text-muted-foreground">
-              <a href="#about" className="hover:underline hover:text-primary">
+            <div className="flex flex-wrap justify-center md:justify-end gap-x-6 gap-y-2 text-sm text-muted-foreground">
+              <a
+                href={isHome ? '#about' : '/#about'}
+                className="hover:underline hover:text-primary"
+              >
                 Sobre
               </a>
-              <a href="#contact" className="hover:underline hover:text-primary">
-                Contato
+              <a href={isHome ? '#faq' : '/#faq'} className="hover:underline hover:text-primary">
+                FAQ
               </a>
-              <a href="#blog" className="hover:underline hover:text-primary">
+              <Link to="/blog" className="hover:underline hover:text-primary">
                 Blog
-              </a>
+              </Link>
             </div>
           </div>
         </div>

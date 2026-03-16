@@ -1,38 +1,100 @@
-import { Badge } from '@/components/ui/badge'
+import { Facebook, Linkedin, BookOpen } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import autorImage from '@/assets/autor-4c853.jpg'
 
 export function Author() {
   return (
-    <section id="autor" className="py-24 bg-white">
-      <div className="container mx-auto px-4">
-        <div className="max-w-4xl mx-auto bg-slate-50 rounded-3xl p-8 md:p-12 shadow-sm border border-slate-100 flex flex-col md:flex-row gap-10 items-center">
-          <div className="w-48 h-48 md:w-64 md:h-64 shrink-0 rounded-full overflow-hidden border-4 border-white shadow-lg relative">
-            <img
-              src="https://img.usecurling.com/ppl/large?gender=male&seed=eduardocanal"
-              alt="Eduardo Canal"
-              className="w-full h-full object-cover"
-            />
+    <section id="sobre-o-autor" className="py-24 bg-background border-y border-border/40">
+      <div className="container mx-auto px-4 md:px-6">
+        <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
+          <div className="flex justify-center lg:justify-end order-first lg:order-none">
+            <div className="relative group">
+              <div className="absolute -inset-2 bg-primary/20 rounded-2xl blur-2xl opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="relative w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 overflow-hidden rounded-2xl border-4 border-muted shadow-2xl transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-2">
+                <img
+                  src={autorImage}
+                  alt="Autor do Guia Masterclass de Implementação WMS"
+                  className="w-full h-full object-cover object-center"
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="text-center md:text-left">
-            <Badge className="bg-primary/10 text-primary hover:bg-primary/20 mb-4 px-3 py-1 text-sm font-medium border-0">
-              Sobre o Autor
-            </Badge>
-            <h2 className="text-3xl font-bold text-slate-900 mb-2">Eduardo Canal</h2>
-            <p className="text-primary font-medium mb-6">
-              Especialista em Logística e Implementação WMS
-            </p>
+          <div className="space-y-8 max-w-2xl">
+            <div className="space-y-4">
+              <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+                Sobre o Autor
+              </h2>
+              <p className="text-xl text-primary font-semibold">
+                Especialista em Logística e Implementação WMS
+              </p>
+            </div>
 
-            <div className="space-y-4 text-slate-600 leading-relaxed">
+            <div className="space-y-5 text-lg text-muted-foreground leading-relaxed">
               <p>
-                Com mais de 15 anos de experiência prática na linha de frente da logística, Eduardo
-                Canal liderou dezenas de projetos de implementação de WMS em operações de alta
-                complexidade.
+                Com uma trajetória dedicada à excelência operacional, o autor possui profunda
+                expertise na transformação de cadeias de suprimentos e na gestão estratégica de
+                armazéns.
               </p>
               <p>
-                Sua missão com este livro é democratizar o conhecimento técnico avançado,
-                transformando teorias complexas em guias práticos e acionáveis para líderes e
-                analistas de supply chain que buscam a excelência operacional.
+                Sua vivência técnica e prática abrange o planejamento minucioso e a execução de
+                sistemas WMS (Warehouse Management System), ajudando organizações a superarem
+                desafios logísticos, reduzirem custos e aumentarem a eficiência de suas operações.
               </p>
+              <p>
+                No{' '}
+                <strong className="text-foreground">"Guia Masterclass de Implementação WMS"</strong>
+                , ele compartilha metodologias validadas em campo, entregando um roteiro prático
+                para que gestores e analistas possam liderar projetos de tecnologia logística com
+                segurança e resultados expressivos.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-4 pt-2">
+              <Button
+                asChild
+                variant="outline"
+                className="gap-2 transition-transform hover:-translate-y-1 duration-300"
+              >
+                <a
+                  href="https://www.linkedin.com/company/guia-masterclass-de-implementacao-wms/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="LinkedIn do Guia Masterclass"
+                >
+                  <Linkedin className="w-4 h-4" />
+                  LinkedIn
+                </a>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                className="gap-2 transition-transform hover:-translate-y-1 duration-300"
+              >
+                <a
+                  href="https://www.facebook.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Facebook do Guia Masterclass"
+                >
+                  <Facebook className="w-4 h-4" />
+                  Facebook
+                </a>
+              </Button>
+              <Button
+                asChild
+                className="gap-2 transition-transform hover:-translate-y-1 duration-300"
+              >
+                <a
+                  href="https://a.co/d/01x2227p"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Comprar Guia Masterclass na Amazon"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  Amazon
+                </a>
+              </Button>
             </div>
           </div>
         </div>
@@ -40,3 +102,5 @@ export function Author() {
     </section>
   )
 }
+
+export default Author

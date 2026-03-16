@@ -25011,87 +25011,167 @@ function CoreTopics() {
 	});
 }
 //#endregion
-//#region src/components/ui/badge.tsx
-var badgeVariants = cva("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2", {
-	variants: { variant: {
-		default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
-		secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-		destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-		outline: "text-foreground"
-	} },
-	defaultVariants: { variant: "default" }
-});
-function Badge({ className, variant, ...props }) {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-		"data-uid": "src/components/ui/badge.tsx:30:10",
-		"data-prohibitions": "[editContent]",
-		className: cn$1(badgeVariants({ variant }), className),
-		...props
-	});
-}
+//#region src/assets/autor-4c853.jpg
+var autor_4c853_default = "/assets/autor-4c853-WVgivwxb.jpg";
 //#endregion
 //#region src/components/sections/Author.tsx
 function Author() {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("section", {
-		"data-uid": "src/components/sections/Author.tsx:5:5",
+		"data-uid": "src/components/sections/Author.tsx:7:5",
 		"data-prohibitions": "[]",
-		id: "autor",
-		className: "py-24 bg-white",
+		id: "sobre-o-autor",
+		className: "py-24 bg-background border-y border-border/40",
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-			"data-uid": "src/components/sections/Author.tsx:6:7",
+			"data-uid": "src/components/sections/Author.tsx:8:7",
 			"data-prohibitions": "[]",
-			className: "container mx-auto px-4",
+			className: "container mx-auto px-4 md:px-6",
 			children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				"data-uid": "src/components/sections/Author.tsx:7:9",
+				"data-uid": "src/components/sections/Author.tsx:9:9",
 				"data-prohibitions": "[]",
-				className: "max-w-4xl mx-auto bg-slate-50 rounded-3xl p-8 md:p-12 shadow-sm border border-slate-100 flex flex-col md:flex-row gap-10 items-center",
+				className: "grid gap-12 lg:grid-cols-2 lg:gap-16 items-center",
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-					"data-uid": "src/components/sections/Author.tsx:8:11",
+					"data-uid": "src/components/sections/Author.tsx:10:11",
 					"data-prohibitions": "[]",
-					className: "w-48 h-48 md:w-64 md:h-64 shrink-0 rounded-full overflow-hidden border-4 border-white shadow-lg relative",
-					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
-						"data-uid": "src/components/sections/Author.tsx:9:13",
-						"data-prohibitions": "[editContent]",
-						src: "https://img.usecurling.com/ppl/large?gender=male&seed=eduardocanal",
-						alt: "Eduardo Canal",
-						className: "w-full h-full object-cover"
+					className: "flex justify-center lg:justify-end order-first lg:order-none",
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						"data-uid": "src/components/sections/Author.tsx:11:13",
+						"data-prohibitions": "[]",
+						className: "relative group",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+							"data-uid": "src/components/sections/Author.tsx:12:15",
+							"data-prohibitions": "[editContent]",
+							className: "absolute -inset-2 bg-primary/20 rounded-2xl blur-2xl opacity-50 group-hover:opacity-100 transition-opacity duration-500"
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+							"data-uid": "src/components/sections/Author.tsx:13:15",
+							"data-prohibitions": "[]",
+							className: "relative w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 overflow-hidden rounded-2xl border-4 border-muted shadow-2xl transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-2",
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+								"data-uid": "src/components/sections/Author.tsx:14:17",
+								"data-prohibitions": "[editContent]",
+								src: autor_4c853_default,
+								alt: "Autor do Guia Masterclass de Implementação WMS",
+								className: "w-full h-full object-cover object-center"
+							})
+						})]
 					})
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					"data-uid": "src/components/sections/Author.tsx:16:11",
+					"data-uid": "src/components/sections/Author.tsx:23:11",
 					"data-prohibitions": "[]",
-					className: "text-center md:text-left",
+					className: "space-y-8 max-w-2xl",
 					children: [
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Badge, {
-							"data-uid": "src/components/sections/Author.tsx:17:13",
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							"data-uid": "src/components/sections/Author.tsx:24:13",
 							"data-prohibitions": "[]",
-							className: "bg-primary/10 text-primary hover:bg-primary/20 mb-4 px-3 py-1 text-sm font-medium border-0",
-							children: "Sobre o Autor"
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
-							"data-uid": "src/components/sections/Author.tsx:20:13",
-							"data-prohibitions": "[]",
-							className: "text-3xl font-bold text-slate-900 mb-2",
-							children: "Eduardo Canal"
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-							"data-uid": "src/components/sections/Author.tsx:21:13",
-							"data-prohibitions": "[]",
-							className: "text-primary font-medium mb-6",
-							children: "Especialista em Logística e Implementação WMS"
+							className: "space-y-4",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
+								"data-uid": "src/components/sections/Author.tsx:25:15",
+								"data-prohibitions": "[]",
+								className: "text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl",
+								children: "Sobre o Autor"
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								"data-uid": "src/components/sections/Author.tsx:28:15",
+								"data-prohibitions": "[]",
+								className: "text-xl text-primary font-semibold",
+								children: "Especialista em Logística e Implementação WMS"
+							})]
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							"data-uid": "src/components/sections/Author.tsx:25:13",
+							"data-uid": "src/components/sections/Author.tsx:33:13",
 							"data-prohibitions": "[]",
-							className: "space-y-4 text-slate-600 leading-relaxed",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-								"data-uid": "src/components/sections/Author.tsx:26:15",
-								"data-prohibitions": "[]",
-								children: "Com mais de 15 anos de experiência prática na linha de frente da logística, Eduardo Canal liderou dezenas de projetos de implementação de WMS em operações de alta complexidade."
-							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-								"data-uid": "src/components/sections/Author.tsx:31:15",
-								"data-prohibitions": "[]",
-								children: "Sua missão com este livro é democratizar o conhecimento técnico avançado, transformando teorias complexas em guias práticos e acionáveis para líderes e analistas de supply chain que buscam a excelência operacional."
-							})]
+							className: "space-y-5 text-lg text-muted-foreground leading-relaxed",
+							children: [
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+									"data-uid": "src/components/sections/Author.tsx:34:15",
+									"data-prohibitions": "[]",
+									children: "Com uma trajetória dedicada à excelência operacional, o autor possui profunda expertise na transformação de cadeias de suprimentos e na gestão estratégica de armazéns."
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+									"data-uid": "src/components/sections/Author.tsx:39:15",
+									"data-prohibitions": "[]",
+									children: "Sua vivência técnica e prática abrange o planejamento minucioso e a execução de sistemas WMS (Warehouse Management System), ajudando organizações a superarem desafios logísticos, reduzirem custos e aumentarem a eficiência de suas operações."
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+									"data-uid": "src/components/sections/Author.tsx:44:15",
+									"data-prohibitions": "[]",
+									children: [
+										"No",
+										" ",
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", {
+											"data-uid": "src/components/sections/Author.tsx:46:17",
+											"data-prohibitions": "[]",
+											className: "text-foreground",
+											children: "\"Guia Masterclass de Implementação WMS\""
+										}),
+										", ele compartilha metodologias validadas em campo, entregando um roteiro prático para que gestores e analistas possam liderar projetos de tecnologia logística com segurança e resultados expressivos."
+									]
+								})
+							]
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							"data-uid": "src/components/sections/Author.tsx:53:13",
+							"data-prohibitions": "[]",
+							className: "flex flex-wrap gap-4 pt-2",
+							children: [
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+									"data-uid": "src/components/sections/Author.tsx:54:15",
+									"data-prohibitions": "[]",
+									asChild: true,
+									variant: "outline",
+									className: "gap-2 transition-transform hover:-translate-y-1 duration-300",
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("a", {
+										"data-uid": "src/components/sections/Author.tsx:59:17",
+										"data-prohibitions": "[]",
+										href: "https://www.linkedin.com/company/guia-masterclass-de-implementacao-wms/",
+										target: "_blank",
+										rel: "noopener noreferrer",
+										"aria-label": "LinkedIn do Guia Masterclass",
+										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Linkedin, {
+											"data-uid": "src/components/sections/Author.tsx:65:19",
+											"data-prohibitions": "[editContent]",
+											className: "w-4 h-4"
+										}), "LinkedIn"]
+									})
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+									"data-uid": "src/components/sections/Author.tsx:69:15",
+									"data-prohibitions": "[]",
+									asChild: true,
+									variant: "outline",
+									className: "gap-2 transition-transform hover:-translate-y-1 duration-300",
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("a", {
+										"data-uid": "src/components/sections/Author.tsx:74:17",
+										"data-prohibitions": "[]",
+										href: "https://www.facebook.com/",
+										target: "_blank",
+										rel: "noopener noreferrer",
+										"aria-label": "Facebook do Guia Masterclass",
+										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Facebook, {
+											"data-uid": "src/components/sections/Author.tsx:80:19",
+											"data-prohibitions": "[editContent]",
+											className: "w-4 h-4"
+										}), "Facebook"]
+									})
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+									"data-uid": "src/components/sections/Author.tsx:84:15",
+									"data-prohibitions": "[]",
+									asChild: true,
+									className: "gap-2 transition-transform hover:-translate-y-1 duration-300",
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("a", {
+										"data-uid": "src/components/sections/Author.tsx:88:17",
+										"data-prohibitions": "[]",
+										href: "https://a.co/d/01x2227p",
+										target: "_blank",
+										rel: "noopener noreferrer",
+										"aria-label": "Comprar Guia Masterclass na Amazon",
+										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BookOpen, {
+											"data-uid": "src/components/sections/Author.tsx:94:19",
+											"data-prohibitions": "[editContent]",
+											className: "w-4 h-4"
+										}), "Amazon"]
+									})
+								})
+							]
 						})
 					]
 				})]
@@ -27270,4 +27350,4 @@ var App = () => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(BrowserRouter, {
 }));
 //#endregion
 
-//# sourceMappingURL=index-B_QpWUVc.js.map
+//# sourceMappingURL=index-BtQ-fDH-.js.map

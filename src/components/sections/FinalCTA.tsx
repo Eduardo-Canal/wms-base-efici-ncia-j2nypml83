@@ -3,34 +3,33 @@ import { ShoppingCart } from 'lucide-react'
 
 export function FinalCTA() {
   return (
-    <section className="py-20 bg-primary relative overflow-hidden">
-      <div className="absolute inset-0 opacity-10">
-        <div
-          className="absolute top-0 left-0 w-full h-full"
-          style={{
-            backgroundImage:
-              'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.8) 0%, transparent 50%)',
-          }}
-        ></div>
-      </div>
-      <div className="container mx-auto px-4 relative z-10 text-center">
-        <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
-          Pronto para levar seu armazém ao próximo nível?
+    <section className="py-24 bg-primary text-primary-foreground relative overflow-hidden">
+      <div className="absolute inset-0 bg-[url('https://img.usecurling.com/p/1920/600?q=warehouse&color=blue')] bg-cover bg-center opacity-10 mix-blend-overlay"></div>
+      <div className="container relative z-10 mx-auto px-4 md:px-6 text-center">
+        <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
+          Pronto para Transformar a Gestão do seu Armazém?
         </h2>
-        <p className="text-primary-foreground/80 text-lg md:text-xl max-w-2xl mx-auto mb-10">
-          Não deixe a eficiência da sua operação para depois. Comece a aplicar as estratégias
-          comprovadas da Masterclass hoje mesmo.
+        <p className="max-w-[700px] mx-auto text-lg md:text-xl text-primary-foreground/80 mb-10">
+          Adquira agora o "Guia Masterclass de Implementação WMS" e construa a base para a
+          eficiência na sua operação logística.
         </p>
-        <Button
-          size="lg"
-          className="bg-secondary text-secondary-foreground hover:bg-white hover:text-slate-900 text-lg h-16 px-10 rounded-full shadow-2xl hover:scale-105 transition-all duration-300"
-          asChild
-        >
-          <a href="https://a.co/d/01x2227p" target="_blank" rel="noopener noreferrer">
-            <ShoppingCart className="mr-2 h-6 w-6" />
-            Comprar na Amazon Agora
-          </a>
-        </Button>
+
+        <div className="flex flex-col sm:flex-row justify-center gap-4">
+          <Button
+            size="lg"
+            variant="secondary"
+            className="h-14 px-8 text-base font-semibold text-primary"
+            asChild
+          >
+            <a href="https://a.co/d/01x2227p" target="_blank" rel="noopener noreferrer">
+              <ShoppingCart className="mr-2 h-5 w-5" />
+              Comprar Agora na Amazon
+            </a>
+          </Button>
+        </div>
+        <p className="mt-6 text-sm text-primary-foreground/60">
+          Disponível em formato Físico e Kindle.
+        </p>
       </div>
     </section>
   )

@@ -1,6 +1,7 @@
 import { Facebook, Linkedin, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import autorImage from '@/assets/autor-4c853.jpg'
+import { AMAZON_VOL1 } from '@/lib/links'
 
 export function Author() {
   return (
@@ -57,10 +58,10 @@ export function Author() {
                 className="gap-2 transition-transform hover:-translate-y-1 duration-300"
               >
                 <a
-                  href="https://www.linkedin.com/company/guia-masterclass-de-implementacao-wms/"
+                  href="https://www.linkedin.com/in/eduardocanal"
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label="LinkedIn do Guia Masterclass"
+                  aria-label="LinkedIn de Eduardo Canal"
                 >
                   <Linkedin className="w-4 h-4" />
                   LinkedIn
@@ -72,7 +73,7 @@ export function Author() {
                 className="gap-2 transition-transform hover:-translate-y-1 duration-300"
               >
                 <a
-                  href="https://www.facebook.com/"
+                  href="https://www.facebook.com/349781528216266"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Facebook do Guia Masterclass"
@@ -86,7 +87,7 @@ export function Author() {
                 className="gap-2 transition-transform hover:-translate-y-1 duration-300"
               >
                 <a
-                  href="https://a.co/d/01x2227p"
+                  href={AMAZON_VOL1}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Comprar Guia Masterclass na Amazon"

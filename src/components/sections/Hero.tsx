@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { BookOpen, ShoppingCart } from 'lucide-react'
 import bookCover from '@/assets/capa-livro-5b87b.jpg'
+import { AMAZON_VOL1, AMAZON_VOL2, AMAZON_AUTOR } from '@/lib/links'
 
 export function Hero() {
   return (
@@ -11,7 +12,7 @@ export function Hero() {
             <div className="space-y-4">
               <div className="inline-flex items-center rounded-full border bg-muted/50 px-3 py-1 text-sm font-medium">
                 <span className="flex h-2 w-2 rounded-full bg-primary mr-2"></span>
-                Lançamento Oficial
+                Volumes 1 e 2 disponíveis
               </div>
               <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl xl:text-6xl text-foreground">
                 WMS Guia Masterclass <br className="hidden sm:inline" />
@@ -24,21 +25,45 @@ export function Hero() {
               <p className="max-w-[600px] text-base text-muted-foreground">Por Eduardo Canal</p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="grid gap-3 sm:grid-cols-2">
               <Button
                 size="lg"
-                className="h-14 px-8 text-base shadow-lg hover:shadow-xl transition-all"
+                className="h-auto px-6 py-4 text-base shadow-lg hover:shadow-xl transition-all"
                 asChild
               >
-                <a href="https://a.co/d/01x2227p" target="_blank" rel="noopener noreferrer">
-                  <ShoppingCart className="mr-2 h-5 w-5" />
-                  Comprar na Amazon
+                <a href={AMAZON_VOL1} target="_blank" rel="noopener noreferrer">
+                  <ShoppingCart className="mr-2 h-5 w-5 shrink-0" />
+                  <span className="flex flex-col items-start leading-tight">
+                    <span className="text-xs font-normal opacity-80">Volume 1</span>
+                    <span>Comprar na Amazon</span>
+                  </span>
                 </a>
               </Button>
-              <Button size="lg" variant="outline" className="h-14 px-8 text-base" asChild>
+              <Button
+                size="lg"
+                className="h-auto px-6 py-4 text-base shadow-lg hover:shadow-xl transition-all"
+                asChild
+              >
+                <a href={AMAZON_VOL2} target="_blank" rel="noopener noreferrer">
+                  <ShoppingCart className="mr-2 h-5 w-5 shrink-0" />
+                  <span className="flex flex-col items-start leading-tight">
+                    <span className="text-xs font-normal opacity-80">Volume 2</span>
+                    <span>Comprar na Amazon</span>
+                  </span>
+                </a>
+              </Button>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button size="lg" variant="outline" className="h-12 px-6 text-base" asChild>
                 <a href="#about">
                   <BookOpen className="mr-2 h-5 w-5" />
                   Conheça o Livro
+                </a>
+              </Button>
+              <Button size="lg" variant="ghost" className="h-12 px-6 text-base" asChild>
+                <a href={AMAZON_AUTOR} target="_blank" rel="noopener noreferrer">
+                  Todos os livros do autor
                 </a>
               </Button>
             </div>

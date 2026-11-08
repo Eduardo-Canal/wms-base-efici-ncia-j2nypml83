@@ -33,7 +33,7 @@ export function Social() {
             asChild
           >
             <a
-              href="https://www.facebook.com/search/top?q=Guia%20masterclass%20de%20implementa%C3%A7%C3%A3o%20WMS"
+              href="https://www.facebook.com/349781528216266"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -43,7 +43,7 @@ export function Social() {
           </Button>
 
           <Button size="lg" variant="outline" asChild>
-            <a href="mailto:contato@exemplo.com">
+            <a href="mailto:eduardo.canal@zionlogtec.com.br?subject=Contato%20-%20Guia%20Masterclass%20de%20Implementa%C3%A7%C3%A3o%20WMS">
               <Mail className="mr-2 h-5 w-5" />
               Falar com o Autor
             </a>

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { BookOpen, Menu } from 'lucide-react'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { useState, useEffect } from 'react'
+import { AMAZON_VOL1 } from '@/lib/links'
 
 export function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -81,7 +82,7 @@ export function Layout() {
           <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
             {renderNavLinks('transition-colors hover:text-primary text-muted-foreground')}
             <Button size="sm" asChild>
-              <a href="https://a.co/d/01x2227p" target="_blank" rel="noopener noreferrer">
+              <a href={AMAZON_VOL1} target="_blank" rel="noopener noreferrer">
                 Comprar na Amazon
               </a>
             </Button>
@@ -109,7 +110,7 @@ export function Layout() {
                     {renderNavLinks('text-base font-medium transition-colors hover:text-primary')}
                     <div className="pt-4 border-t">
                       <Button className="w-full" asChild onClick={() => setIsMobileMenuOpen(false)}>
-                        <a href="https://a.co/d/01x2227p" target="_blank" rel="noopener noreferrer">
+                        <a href={AMAZON_VOL1} target="_blank" rel="noopener noreferrer">
                           Comprar na Amazon
                         </a>
                       </Button>

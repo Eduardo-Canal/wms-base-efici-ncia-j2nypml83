@@ -1,11 +1,9 @@
-// Guarda de campos protegidos em `users`.
-// Sem isso, createRule = "" (signup publico) + updateRule = dono deixariam
-// qualquer visitante se cadastrar como admin ou se auto-promover.
-// Protegidos: papel, verified, email.
+// Guarda de campos protegidos em `users`: papel, verified, email.
+// Sem este hook, createRule = "" (signup publico) + updateRule = dono deixariam
+// qualquer visitante se cadastrar como admin, ou se auto-promover depois.
 // ATENCAO: cada handler do JSVM roda em escopo isolado — nada fora do callback
-// e visivel dentro dele. Por isso tudo vive aqui dentro.
+// e visivel dentro dele, por isso tudo vive aqui dentro.
 onRecordCreateRequest((e) => {
-  const protegidos = ['papel', 'verified', 'email']
   let admin = false
   const auth = e.auth
   if (auth) {

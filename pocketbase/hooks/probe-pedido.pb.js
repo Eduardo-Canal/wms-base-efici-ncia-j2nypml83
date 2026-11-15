@@ -1,17 +1,15 @@
-// PROBE — le o pedido criado no teste do checkout para confirmar que o valor
-// gravado veio do BANCO (19700) e nao do corpo da requisicao (1 centavo).
-// Apagado logo depois.
+// PROBE — confirma que o valor do pedido veio do BANCO (19700), nao do corpo (1).
 routerAdd('GET', '/backend/v1/probe-pedido', (e) => {
   var out = { pedidos: [] }
   try {
-    var rs = $app.findRecordsByFilter('pedidos', "id != ''", '-created', 5, 0)
+    var rs = $app.findRecordsByFilter('pedidos', "id != ''", '', 5, 0)
     for (var i = 0; i < rs.length; i++) {
       out.pedidos.push({
         id: rs[i].id,
-        produto: rs[i].getString('produto'),
         valor_centavos: rs[i].getInt('valor_centavos'),
         status: rs[i].getString('status'),
         email: rs[i].getString('email_comprador'),
+        criado_em: rs[i].getString('criado_em'),
       })
     }
   } catch (err) {

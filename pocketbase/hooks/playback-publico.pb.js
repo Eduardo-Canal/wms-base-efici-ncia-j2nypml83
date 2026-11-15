@@ -3,6 +3,43 @@
 // exceção não viver dentro do caminho de quem pagou.
 // Material (PDF) NÃO sai por aqui: é o que separa isca de curso grátis.
 routerAdd('GET', '/backend/v1/aulas/{slug}/playback-publico', (e) => {
+  // ---- PORTÃO ----
+  // Área fechada = visitante não enxerga nem a aula-isca. Admin e suporte
+  // passam porque é assim que o dono testa antes de liberar. Na dúvida (erro
+  // ao ler a config), FECHA: falha de infraestrutura não pode virar vazamento.
+  // A checagem fica INLINE porque neste projeto `require` local não funciona
+  // no JSVM (as libs dos outros hooks são inlinadas pelo mesmo motivo).
+  var areaAberta = function () {
+    try {
+      var cfg = $app.findFirstRecordByFilter('ead_config', "chave = 'principal'")
+      return cfg.getBool('liberado') === true
+    } catch (_) {
+      return false
+    }
+  }
+  var souEquipe = function (auth) {
+    if (!auth) return false
+    try {
+      if (auth.collection().name === '_superusers') return true
+      var papel = String(auth.get('papel'))
+      return papel === 'admin' || papel === 'suporte'
+    } catch (_) {
+      return false
+    }
+  }
+  if (!areaAberta()) {
+    var quem = null
+    try {
+      quem = e.requestInfo().auth
+    } catch (_) {}
+    if (!souEquipe(quem)) {
+      return e.json(403, {
+        codigo: 'ead_fechado',
+        mensagem: 'A área de cursos ainda não está aberta.',
+      })
+    }
+  }
+
   const comum = {
     segredo: function (nome) {
       try {

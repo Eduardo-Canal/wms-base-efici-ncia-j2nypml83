@@ -7,6 +7,40 @@ routerAdd(
   'GET',
   '/backend/v1/aulas/{slug}/material',
   (e) => {
+    // ---- PORTÃO ----
+    // Mesma regra dos outros endpoints do EAD. Inline porque `require` local
+    // não funciona no JSVM deste projeto.
+    var areaAberta = function () {
+      try {
+        var cfg = $app.findFirstRecordByFilter('ead_config', "chave = 'principal'")
+        return cfg.getBool('liberado') === true
+      } catch (_) {
+        return false
+      }
+    }
+    var souEquipe = function (auth) {
+      if (!auth) return false
+      try {
+        if (auth.collection().name === '_superusers') return true
+        var papel = String(auth.get('papel'))
+        return papel === 'admin' || papel === 'suporte'
+      } catch (_) {
+        return false
+      }
+    }
+    if (!areaAberta()) {
+      var quem = null
+      try {
+        quem = e.requestInfo().auth
+      } catch (_) {}
+      if (!souEquipe(quem)) {
+        return e.json(403, {
+          codigo: 'ead_fechado',
+          mensagem: 'A área de cursos ainda não está aberta.',
+        })
+      }
+    }
+
     const comum = {
       segredo: function (nome) {
         try {

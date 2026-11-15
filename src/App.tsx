@@ -16,6 +16,7 @@ import Entrar from './ead/telas/Entrar'
 import Comprar from './ead/telas/Comprar'
 import Obrigado from './ead/telas/Obrigado'
 import MinhaArea from './ead/telas/MinhaArea'
+import Admin from './ead/telas/Admin'
 import { useSessao } from './ead/useSessao'
 
 const EadRoutes = () => {
@@ -25,6 +26,8 @@ const EadRoutes = () => {
       <Route path="/ead" element={<Catalogo logado={logado} />} />
       <Route path="/ead/entrar" element={<Entrar />} />
       <Route path="/ead/minha-area" element={<MinhaArea logado={logado} />} />
+      {/* só admin: a tela esconde, mas quem barra é o servidor */}
+      <Route path="/ead/admin" element={<Admin />} />
       <Route path="/ead/comprar" element={<Comprar />} />
       <Route path="/ead/obrigado" element={<Obrigado />} />
       <Route path="/ead/aula/:slug" element={<Player />} />

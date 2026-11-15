@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-15T18:54:47.783Z",
+  "generatedAt": "2026-11-15T23:17:48.687Z",
   "collections": [
     {
       "name": "users",
@@ -399,6 +399,18 @@
           "type": "number",
           "required": true,
           "system": false
+        },
+        {
+          "name": "mp_link",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "mp_link_obs",
+          "type": "text",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
@@ -756,6 +768,77 @@
       "indexes": [
         "CREATE INDEX idx_log_aula_em ON log_acessos (aula, em)",
         "CREATE INDEX idx_log_user_em ON log_acessos (user, em)"
+      ]
+    },
+    {
+      "name": "ead_config",
+      "type": "base",
+      "apiRules": {
+        "list": "liberado = true || @request.auth.papel = \"admin\" || @request.auth.papel = \"suporte\"",
+        "view": "liberado = true || @request.auth.papel = \"admin\" || @request.auth.papel = \"suporte\"",
+        "create": "@request.auth.papel = \"admin\"",
+        "update": "@request.auth.papel = \"admin\"",
+        "delete": "@request.auth.papel = \"admin\""
+      },
+      "fields": [
+        {
+          "name": "chave",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "liberado",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "titulo_area",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "aviso_rascunho",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "instrucoes_compra",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "email_suporte",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_ead_config_chave ON ead_config (chave)"
       ]
     }
   ]

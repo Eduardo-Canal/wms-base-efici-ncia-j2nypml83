@@ -70,6 +70,29 @@ export interface Playback {
   tipo_acesso: 'matricula' | 'amostra'
 }
 
+// ---- painel do administrador ----
+export interface Config {
+  id?: string
+  liberado: boolean
+  titulo_area?: string
+  aviso_rascunho?: string
+  instrucoes_compra?: string
+  email_suporte?: string
+  atualizado_em?: string
+}
+
+export interface AlunoMatricula {
+  id: string
+  email: string
+  nome: string
+  curso_slug: string
+  curso_titulo: string
+  status: string
+  origem: string
+  expira_em: string
+  criado_em: string
+}
+
 export class ErroApi extends Error {
   constructor(
     public status: number,
@@ -223,6 +246,36 @@ export const api = {
     return pedir(`/backend/v1/checkout`, {
       method: 'POST',
       body: JSON.stringify({ produto_slug: produtoSlug, nome, email }),
+    })
+  },
+
+  // ---- painel do administrador ----
+  // Toda chamada aqui exige papel admin; o servidor responde 403 para os outros.
+  async adminConfig(): Promise<Config> {
+    return pedir<Config>('/backend/v1/admin/config')
+  },
+
+  async adminSalvarConfig(
+    patch: Partial<Config>,
+  ): Promise<{ ok: boolean; liberado: boolean; mensagem?: string }> {
+    return pedir('/backend/v1/admin/config', { method: 'POST', body: JSON.stringify(patch) })
+  },
+
+  async adminAlunos(): Promise<{ total: number; alunos: AlunoMatricula[] }> {
+    return pedir('/backend/v1/admin/alunos')
+  },
+
+  async adminLiberar(dados: { email: string; curso_slug: string; dias?: number }) {
+    return pedir<{ ok: boolean; mensagem?: string; expira_em?: string }>(
+      '/backend/v1/admin/matricula',
+      { method: 'POST', body: JSON.stringify(dados) },
+    )
+  },
+
+  async adminRevogar(dados: { email: string; curso_slug: string }) {
+    return pedir<{ ok: boolean; mensagem?: string }>('/backend/v1/admin/matricula/revogar', {
+      method: 'POST',
+      body: JSON.stringify(dados),
     })
   },
 }

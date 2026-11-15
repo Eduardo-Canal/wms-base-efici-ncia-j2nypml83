@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-15T04:01:06.760Z",
+  "generatedAt": "2026-11-15T04:02:16.565Z",
   "collections": [
     {
       "name": "users",
@@ -315,6 +315,430 @@
       ],
       "indexes": [
         "CREATE UNIQUE INDEX idx_aulas_midia_aula ON aulas_midia (aula)"
+      ]
+    },
+    {
+      "name": "produtos",
+      "type": "base",
+      "apiRules": {
+        "list": "ativo = true && preco_centavos > 0",
+        "view": "ativo = true && preco_centavos > 0",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "slug",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "titulo",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "descricao",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "preco_centavos",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "moeda",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "cursos",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "cursos"
+        },
+        {
+          "name": "capa",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ativo",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ordem",
+          "type": "number",
+          "required": true,
+          "system": false
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_produtos_slug ON produtos (slug)"
+      ]
+    },
+    {
+      "name": "pedidos",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != \"\" && (user = @request.auth.id || @request.auth.papel = \"admin\")",
+        "view": "@request.auth.id != \"\" && (user = @request.auth.id || @request.auth.papel = \"admin\")",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "produto",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "produtos"
+        },
+        {
+          "name": "user",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "email_comprador",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "nome_comprador",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "valor_centavos",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "pendente",
+            "pago",
+            "recusado",
+            "cancelado",
+            "reembolsado"
+          ]
+        },
+        {
+          "name": "gateway",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "pref_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "pagamento_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "criado_em",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "atualizado_em",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_pedidos_pref ON pedidos (pref_id)",
+        "CREATE INDEX idx_pedidos_email ON pedidos (email_comprador)",
+        "CREATE INDEX idx_pedidos_status ON pedidos (status)"
+      ]
+    },
+    {
+      "name": "matriculas",
+      "type": "base",
+      "apiRules": {
+        "list": "user = @request.auth.id || @request.auth.papel = \"admin\" || @request.auth.papel = \"suporte\"",
+        "view": "user = @request.auth.id || @request.auth.papel = \"admin\" || @request.auth.papel = \"suporte\"",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "curso",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "cursos"
+        },
+        {
+          "name": "pedido",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "pedidos"
+        },
+        {
+          "name": "origem",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "compra",
+            "manual",
+            "cortesia",
+            "importacao"
+          ]
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "ativa",
+            "suspensa",
+            "expirada",
+            "reembolsada"
+          ]
+        },
+        {
+          "name": "expira_em",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "criado_em",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_matriculas_user_curso ON matriculas (user, curso)"
+      ]
+    },
+    {
+      "name": "pagamentos",
+      "type": "base",
+      "apiRules": {
+        "list": null,
+        "view": null,
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "pedido",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "pedidos"
+        },
+        {
+          "name": "gateway",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "payment_id",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "valor_centavos",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "payload_bruto",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "recebido_em",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "processado",
+          "type": "bool",
+          "required": false,
+          "system": false
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_pagamentos_payment ON pagamentos (payment_id)",
+        "CREATE INDEX idx_pagamentos_pendentes ON pagamentos (processado)"
+      ]
+    },
+    {
+      "name": "progresso_aulas",
+      "type": "base",
+      "apiRules": {
+        "list": "user = @request.auth.id",
+        "view": "user = @request.auth.id",
+        "create": "user = @request.auth.id && aula.publicado = true",
+        "update": "user = @request.auth.id",
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "aula",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "aulas"
+        },
+        {
+          "name": "concluida",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "posicao_seg",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "atualizado_em",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_progresso_user_aula ON progresso_aulas (user, aula)"
+      ]
+    },
+    {
+      "name": "log_acessos",
+      "type": "base",
+      "apiRules": {
+        "list": null,
+        "view": null,
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "aula",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "aulas"
+        },
+        {
+          "name": "tipo",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "matricula",
+            "amostra"
+          ]
+        },
+        {
+          "name": "ip_hash",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "user_agent",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "em",
+          "type": "date",
+          "required": true,
+          "system": false
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_log_aula_em ON log_acessos (aula, em)",
+        "CREATE INDEX idx_log_user_em ON log_acessos (user, em)"
       ]
     }
   ]

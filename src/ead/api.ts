@@ -93,6 +93,20 @@ export interface AlunoMatricula {
   criado_em: string
 }
 
+export interface ProdutoAdmin {
+  id: string
+  slug: string
+  titulo: string
+  ativo: boolean
+  preco_centavos: number
+  moeda: string
+  mp_link: string
+  mp_link_obs: string
+  curso_slug: string
+  curso_titulo: string
+  ordem: number
+}
+
 export class ErroApi extends Error {
   constructor(
     public status: number,
@@ -117,6 +131,17 @@ export function setToken(t: string) {
     else localStorage.removeItem(CHAVE_TOKEN)
   } catch {
     /* modo privado sem storage: a sessão vive só nesta aba */
+  }
+  // AVISA as telas (defeito real, 15/11 20:45):
+  // o login gravava o token e navegava, mas `useSessao` só lia o token no
+  // primeiro render. Resultado: a pessoa entrava e continuava vendo
+  // "Entre para ver os seus cursos" — loop de login. O evento `ead:sessao` já
+  // era escutado pelo hook e nunca era disparado; agora é disparado aqui, no
+  // único lugar que muda o token.
+  try {
+    window.dispatchEvent(new Event('ead:sessao'))
+  } catch {
+    /* ambiente sem window (SSR/teste): nada a avisar */
   }
 }
 
@@ -277,6 +302,24 @@ export const api = {
   async adminLiberar(dados: { email: string; curso_slug: string; dias?: number }) {
     return pedir<{ ok: boolean; mensagem?: string; expira_em?: string }>(
       '/backend/v1/admin/matricula',
+      { method: 'POST', body: JSON.stringify(dados) },
+    )
+  },
+
+  // ---- preço e link de pagamento ----
+  async adminProdutos(): Promise<{ total: number; produtos: ProdutoAdmin[] }> {
+    return pedir('/backend/v1/admin/produtos')
+  },
+
+  async adminSalvarProduto(dados: {
+    id: string
+    preco_reais?: string
+    mp_link?: string
+    mp_link_obs?: string
+    ativo?: boolean
+  }) {
+    return pedir<{ ok: boolean; mensagem?: string; preco_centavos: number; ativo: boolean }>(
+      '/backend/v1/admin/produto',
       { method: 'POST', body: JSON.stringify(dados) },
     )
   },

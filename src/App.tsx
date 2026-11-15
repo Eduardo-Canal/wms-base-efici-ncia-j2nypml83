@@ -25,7 +25,10 @@ const EadRoutes = () => {
   return (
     <>
       <Route path="/ead" element={<Catalogo logado={logado} />} />
-      <Route path="/ead/entrar" element={<Entrar />} />
+      <Route
+        path="/ead/entrar"
+        element={<Entrar onEntrou={() => window.dispatchEvent(new Event('ead:sessao'))} />}
+      />
       {/* fora de /ead de propósito: o link do e-mail aponta para /reset-password
           e precisa funcionar mesmo com a área de cursos fechada */}
       <Route path="/reset-password" element={<ResetSenha />} />

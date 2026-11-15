@@ -17,7 +17,7 @@
 //
 // NADA DE SEGREDO AQUI: este arquivo vai para o navegador.
 import { useEffect, useState } from 'react'
-import { api, type AlunoMatricula, type Config } from '../api'
+import { api, type AlunoMatricula, type Config, type ProdutoAdmin } from '../api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -153,7 +153,157 @@ export default function Admin() {
         />
       </div>
 
+      <Produtos />
+
       <Alunos />
+    </div>
+  )
+}
+
+// Preço e link de pagamento — o que o dono pediu para editar sozinho.
+function Produtos() {
+  const [lista, setLista] = useState<ProdutoAdmin[]>([])
+  const [carregando, setCarregando] = useState(true)
+  const [msg, setMsg] = useState('')
+  const [erro, setErro] = useState('')
+
+  function carregar() {
+    setCarregando(true)
+    api
+      .adminProdutos()
+      .then((r) => setLista(r.produtos))
+      .catch((e) => setErro(mensagemDe(e)))
+      .finally(() => setCarregando(false))
+  }
+  useEffect(carregar, [])
+
+  return (
+    <div className="mt-10">
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Preço e link de pagamento</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            O aluno clica em Comprar e vai para o seu link do Mercado Pago. Depois de conferir o
+            pagamento, libere o acesso em “Liberar acesso”.
+          </p>
+
+          {msg && (
+            <p className="mt-3 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+              {msg}
+            </p>
+          )}
+          {erro && (
+            <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{erro}</p>
+          )}
+
+          {carregando ? (
+            <p className="py-4 text-sm text-muted-foreground">Carregando…</p>
+          ) : lista.length === 0 ? (
+            <p className="py-4 text-sm text-muted-foreground">Nenhum produto cadastrado.</p>
+          ) : (
+            <div className="mt-4 space-y-6">
+              {lista.map((p) => (
+                <ProdutoLinha
+                  key={p.id}
+                  produto={p}
+                  onSalvo={(m) => {
+                    setMsg(m)
+                    setErro('')
+                    carregar()
+                  }}
+                  onErro={(m) => {
+                    setErro(m)
+                    setMsg('')
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function ProdutoLinha({
+  produto,
+  onSalvo,
+  onErro,
+}: {
+  produto: ProdutoAdmin
+  onSalvo: (m: string) => void
+  onErro: (m: string) => void
+}) {
+  // Preço em reais para digitar; o banco guarda centavos.
+  const [preco, setPreco] = useState(
+    produto.preco_centavos > 0 ? (produto.preco_centavos / 100).toFixed(2).replace('.', ',') : '',
+  )
+  const [link, setLink] = useState(produto.mp_link ?? '')
+  const [ativo, setAtivo] = useState(produto.ativo)
+  const [salvando, setSalvando] = useState(false)
+
+  async function salvar() {
+    setSalvando(true)
+    try {
+      const r = await api.adminSalvarProduto({
+        id: produto.id,
+        preco_reais: preco,
+        mp_link: link,
+        ativo,
+      })
+      onSalvo(r.mensagem ?? 'Salvo.')
+    } catch (e) {
+      onErro(mensagemDe(e))
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  return (
+    <div className="rounded-lg border p-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div>
+          <p className="font-medium">{produto.titulo}</p>
+          <p className="text-xs text-muted-foreground">
+            {produto.curso_titulo || produto.curso_slug || 'sem curso'} · slug {produto.slug}
+          </p>
+        </div>
+        <Badge variant={ativo ? 'default' : 'secondary'}>{ativo ? 'à venda' : 'pausado'}</Badge>
+      </div>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div>
+          <Label className="text-xs">Preço (R$)</Label>
+          <Input
+            className="mt-1"
+            value={preco}
+            onChange={(e) => setPreco(e.target.value)}
+            placeholder="197,00"
+            inputMode="decimal"
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Link de pagamento (Mercado Pago)</Label>
+          <Input
+            className="mt-1"
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            placeholder="https://mpago.la/..."
+          />
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={ativo} onChange={(e) => setAtivo(e.target.checked)} />
+          Colocar à venda
+        </label>
+        <Button disabled={salvando} onClick={salvar}>
+          {salvando ? 'Salvando…' : 'Salvar'}
+        </Button>
+      </div>
     </div>
   )
 }

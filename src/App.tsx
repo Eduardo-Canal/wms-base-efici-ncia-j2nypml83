@@ -17,6 +17,7 @@ import Comprar from './ead/telas/Comprar'
 import Obrigado from './ead/telas/Obrigado'
 import MinhaArea from './ead/telas/MinhaArea'
 import Admin from './ead/telas/Admin'
+import ResetSenha from './ead/telas/ResetSenha'
 import { useSessao } from './ead/useSessao'
 
 const EadRoutes = () => {
@@ -25,6 +26,9 @@ const EadRoutes = () => {
     <>
       <Route path="/ead" element={<Catalogo logado={logado} />} />
       <Route path="/ead/entrar" element={<Entrar />} />
+      {/* fora de /ead de propósito: o link do e-mail aponta para /reset-password
+          e precisa funcionar mesmo com a área de cursos fechada */}
+      <Route path="/reset-password" element={<ResetSenha />} />
       <Route path="/ead/minha-area" element={<MinhaArea logado={logado} />} />
       {/* só admin: a tela esconde, mas quem barra é o servidor */}
       <Route path="/ead/admin" element={<Admin />} />

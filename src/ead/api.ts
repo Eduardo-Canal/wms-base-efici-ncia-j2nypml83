@@ -146,6 +146,15 @@ async function pedir<T>(caminho: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
+  // ---- redefinir senha (link do e-mail) ----
+  // O token vem na URL do e-mail ({RESET_URL}) e é de uso único.
+  async confirmarNovaSenha(token: string, senha: string, confirmacao: string): Promise<void> {
+    await pedir('/api/collections/users/confirm-password-reset', {
+      method: 'POST',
+      body: JSON.stringify({ token, password: senha, passwordConfirm: confirmacao }),
+    })
+  },
+
   // ---- login / cadastro ----
   async entrar(email: string, senha: string): Promise<Sessao> {
     const r = await pedir<{ token: string; record: any }>(

@@ -22,12 +22,18 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
     hmachex: function (dados, chave) {
       return String($security.hs256(String(dados), String(chave)))
     },
+    // Comparacao em tempo constante feita a mao. NAO usar $security.equal:
+    // ele lancou excecao neste runtime e o try/catch devolvia false sempre —
+    // resultado: assinatura valida era recusada como invalida (testado).
     iguais: function (a, b) {
-      try {
-        return $security.equal(String(a), String(b))
-      } catch (e) {
-        return false
+      var x = String(a)
+      var y = String(b)
+      if (x.length !== y.length) return false
+      var dif = 0
+      for (var i = 0; i < x.length; i++) {
+        dif = dif | (x.charCodeAt(i) ^ y.charCodeAt(i))
       }
+      return dif === 0
     },
     texto: function (v) {
       return v === undefined || v === null ? '' : String(v).trim()

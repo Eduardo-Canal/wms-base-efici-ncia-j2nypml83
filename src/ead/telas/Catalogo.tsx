@@ -15,6 +15,8 @@ export default function Catalogo({ logado }: { logado: boolean }) {
   const [cards, setCards] = useState<CardProduto[]>([])
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
+  // Rascunho = área fechada pelo portão, não um defeito. Muda só o visual.
+  const [modoRascunho, setModoRascunho] = useState(false)
 
   useEffect(() => {
     let vivo = true
@@ -28,7 +30,18 @@ export default function Catalogo({ logado }: { logado: boolean }) {
           .map((p) => ({ ...p, cursosExpandidos: extrairCursos(p) }))
         setCards(visiveis)
       })
-      .catch(() => vivo && setErro('Não foi possível carregar os cursos agora.'))
+      .catch((e) => {
+        if (!vivo) return
+        // 403 = a área está fechada ao público (portão do servidor). Não é
+        // falha: é rascunho. Dizer "erro" faria o dono achar que quebrou.
+        const status = (e as { status?: number })?.status
+        if (status === 403) {
+          setModoRascunho(true)
+          setErro('A área de cursos está sendo preparada. Volte em breve.')
+        } else {
+          setErro('Não foi possível carregar os cursos agora.')
+        }
+      })
       .finally(() => vivo && setCarregando(false))
     return () => {
       vivo = false
@@ -45,7 +58,10 @@ export default function Catalogo({ logado }: { logado: boolean }) {
         Conteúdo prático de WMS, em aulas curtas, direto ao ponto.
       </p>
 
-      {erro && (
+      {erro && modoRascunho && (
+        <p className="mt-6 rounded bg-muted px-4 py-6 text-muted-foreground">{erro}</p>
+      )}
+      {erro && !modoRascunho && (
         <p role="alert" className="mt-6 rounded bg-red-50 px-3 py-2 text-sm text-red-700">
           {erro}
         </p>

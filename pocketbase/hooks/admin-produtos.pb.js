@@ -17,7 +17,10 @@
 //
 // Libs inline porque `require` local não funciona no JSVM deste projeto.
 
-const TEXTO = (v) => (v === undefined || v === null ? '' : String(v).trim())
+// ATENÇÃO AO ESCOPO (o QA do Skip barra isto, e é um defeito real):
+// nada declarado no topo do arquivo é visível dentro do callback. Se um helper
+// como `TEXTO` viver lá fora, o hook lança ReferenceError em produção. Por isso
+// cada handler declara o seu, inline.
 
 // ---------------------------------------------------------------------------
 // GET /backend/v1/admin/produtos — lista para a tela do painel
@@ -106,6 +109,9 @@ routerAdd(
         codigo: 'sem_permissao',
         mensagem: 'Só o administrador altera preço e link.',
       })
+
+    // Inline de propósito: helper de topo não é visível no callback (JSVM).
+    const TEXTO = (v) => (v === undefined || v === null ? '' : String(v).trim())
 
     let corpo = {}
     try {

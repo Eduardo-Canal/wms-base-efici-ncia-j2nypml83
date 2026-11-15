@@ -202,6 +202,9 @@ routerAdd(
       expira_em: assinada.expira_em,
       pergunta_fixacao: aula.getString('pergunta_fixacao'),
       tipo_acesso: v.tipo,
+      // Só um sinalizador: o LINK do PDF nunca sai por aqui.
+      // Quem entrega é /material, depois de checar matrícula.
+      tem_material: String(aula.getString('material_url') || '').trim() !== '',
     })
   },
   $apis.requireAuth(),

@@ -85,12 +85,21 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
   if (!ts || !v1)
     return e.json(401, { codigo: 'assinatura_ausente', mensagem: 'Assinatura ausente.' })
 
+  // A string canonica do MP inclui o x-request-id QUANDO ele existe. Medido em
+  // 15/11: o proxy da plataforma injeta o proprio x-request-id, que nao e o que
+  // o MP assinou — e a conta nao fecha. Solucao: aceitar as duas formas, com e
+  // sem o request-id. Nao afrouxa a seguranca: continua exigindo HMAC valido
+  // sobre um dos dois textos canonicos.
   var requestId = comum.texto(e.request.header.get('x-request-id'))
-  var canonica = 'id:' + dataId + ';'
-  if (requestId) canonica += 'request-id:' + requestId + ';'
-  canonica += 'ts:' + ts + ';'
+  var canonicaSem = 'id:' + dataId + ';ts:' + ts + ';'
+  var canonicaCom = 'id:' + dataId + ';'
+  if (requestId) canonicaCom += 'request-id:' + requestId + ';'
+  canonicaCom += 'ts:' + ts + ';'
 
-  if (!comum.iguais(comum.hmachex(canonica, segredo), v1)) {
+  var okAssinatura =
+    comum.iguais(comum.hmachex(canonicaSem, segredo), v1) ||
+    comum.iguais(comum.hmachex(canonicaCom, segredo), v1)
+  if (!okAssinatura) {
     console.log('[ead] webhook com assinatura invalida (data.id=' + dataId + ')')
     return e.json(401, { codigo: 'assinatura_invalida', mensagem: 'Assinatura inválida.' })
   }

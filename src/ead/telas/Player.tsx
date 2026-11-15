@@ -62,6 +62,31 @@ export default function Player() {
     return () => clearInterval(timer)
   }, [carregar])
 
+  // O PDF mora no Google Drive e o LINK só é entregue pelo endpoint /material,
+  // que confere matrícula. Por isso não guardamos o link no estado da página:
+  // a cada clique perguntamos ao servidor.
+  const [baixando, setBaixando] = useState(false)
+  async function abrirMaterial() {
+    setBaixando(true)
+    try {
+      const base = (import.meta.env.VITE_EAD_API_BASE as string | undefined) ?? ''
+      const r = await fetch(`${base}/backend/v1/aulas/${encodeURIComponent(slug)}/material`, {
+        headers: { Authorization: getToken() },
+      })
+      const d = await r.json()
+      if (!r.ok || !d.url) {
+        setErroMaterial(d.mensagem ?? 'Material indisponível.')
+        return
+      }
+      window.open(d.url, '_blank', 'noopener,noreferrer')
+    } catch {
+      setErroMaterial('Não foi possível abrir o material agora.')
+    } finally {
+      setBaixando(false)
+    }
+  }
+  const [erroMaterial, setErroMaterial] = useState('')
+
   async function marcarConcluida() {
     if (estado.t !== 'ok') return
     if (!getToken()) return setEstado({ t: 'sem_login' })
@@ -153,14 +178,18 @@ export default function Player() {
       </div>
 
       {/* Material só chega quando há matrícula — o endpoint é quem checa. */}
-      {d.material && (
-        <a
-          href={d.material}
-          download
-          className="mt-6 inline-block rounded border px-4 py-2 text-sm"
-        >
-          Baixar o PDF da aula
-        </a>
+      {(d as any).tem_material && (
+        <div className="mt-6">
+          <Button variant="outline" onClick={abrirMaterial} disabled={baixando}>
+            {baixando ? 'Abrindo…' : 'Abrir o PDF da aula'}
+          </Button>
+          <p className="mt-1 text-xs text-muted-foreground">Abre no Google Drive, em nova aba.</p>
+          {erroMaterial && (
+            <p role="alert" className="mt-2 text-sm text-red-700">
+              {erroMaterial}
+            </p>
+          )}
+        </div>
       )}
 
       {d.pergunta_fixacao && (

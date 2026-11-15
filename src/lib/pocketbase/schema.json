@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-15T04:00:04.101Z",
+  "generatedAt": "2026-11-15T04:01:06.760Z",
   "collections": [
     {
       "name": "users",
@@ -136,6 +136,185 @@
       ],
       "indexes": [
         "CREATE UNIQUE INDEX idx_cursos_slug ON cursos (slug)"
+      ]
+    },
+    {
+      "name": "modulos",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.papel = \"admin\" || @request.auth.papel = \"suporte\" || curso.publicado = true",
+        "view": "@request.auth.papel = \"admin\" || @request.auth.papel = \"suporte\" || curso.publicado = true",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "curso",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "cursos"
+        },
+        {
+          "name": "titulo",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ordem",
+          "type": "number",
+          "required": true,
+          "system": false
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_modulos_curso_ordem ON modulos (curso, ordem)",
+        "CREATE INDEX idx_modulos_slug ON modulos (slug)"
+      ]
+    },
+    {
+      "name": "aulas",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.papel = \"admin\" || @request.auth.papel = \"suporte\"",
+        "view": "@request.auth.papel = \"admin\" || @request.auth.papel = \"suporte\"",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "modulo",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "modulos"
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "titulo",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "descricao",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "numero",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "ordem",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "duracao_seg",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "publicado",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "amostra",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "material",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "pergunta_fixacao",
+          "type": "text",
+          "required": false,
+          "system": false
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_aulas_slug ON aulas (slug)",
+        "CREATE UNIQUE INDEX idx_aulas_modulo_ordem ON aulas (modulo, ordem)"
+      ]
+    },
+    {
+      "name": "aulas_midia",
+      "type": "base",
+      "apiRules": {
+        "list": null,
+        "view": null,
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "aula",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "aulas"
+        },
+        {
+          "name": "provider",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "video_id",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "legendas",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "upload",
+            "processando",
+            "pronto",
+            "erro"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_aulas_midia_aula ON aulas_midia (aula)"
       ]
     }
   ]

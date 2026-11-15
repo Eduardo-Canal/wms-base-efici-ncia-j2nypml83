@@ -26,6 +26,7 @@ export function Layout() {
     { id: '#conteudo', label: 'Tópicos' },
     { id: '#depoimentos', label: 'Depoimentos' },
     { id: '#faq', label: 'FAQ' },
+    { id: '/ead', label: 'Cursos' },
     { id: '/blog', label: 'Blog' },
   ]
 

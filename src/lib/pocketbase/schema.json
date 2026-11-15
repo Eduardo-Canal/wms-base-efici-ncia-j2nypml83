@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-15T18:50:37.429Z",
+  "generatedAt": "2026-11-15T18:51:36.076Z",
   "collections": [
     {
       "name": "users",
@@ -29,21 +29,30 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         },
         {
           "name": "papel",
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["aluno", "admin", "suporte"]
+          "selectValues": [
+            "aluno",
+            "admin",
+            "suporte"
+          ]
         }
       ],
       "indexes": [
@@ -121,17 +130,24 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "atualizado_em",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
-      "indexes": ["CREATE UNIQUE INDEX idx_cursos_slug ON cursos (slug)"]
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_cursos_slug ON cursos (slug)"
+      ]
     },
     {
       "name": "modulos",
@@ -306,10 +322,17 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["upload", "processando", "pronto", "erro"]
+          "selectValues": [
+            "upload",
+            "processando",
+            "pronto",
+            "erro"
+          ]
         }
       ],
-      "indexes": ["CREATE UNIQUE INDEX idx_aulas_midia_aula ON aulas_midia (aula)"]
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_aulas_midia_aula ON aulas_midia (aula)"
+      ]
     },
     {
       "name": "produtos",
@@ -378,7 +401,9 @@
           "system": false
         }
       ],
-      "indexes": ["CREATE UNIQUE INDEX idx_produtos_slug ON produtos (slug)"]
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_produtos_slug ON produtos (slug)"
+      ]
     },
     {
       "name": "pedidos",
@@ -428,7 +453,13 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["pendente", "pago", "recusado", "cancelado", "reembolsado"]
+          "selectValues": [
+            "pendente",
+            "pago",
+            "recusado",
+            "cancelado",
+            "reembolsado"
+          ]
         },
         {
           "name": "gateway",
@@ -453,14 +484,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "atualizado_em",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": [
@@ -506,14 +542,24 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["compra", "manual", "cortesia", "importacao"]
+          "selectValues": [
+            "compra",
+            "manual",
+            "cortesia",
+            "importacao"
+          ]
         },
         {
           "name": "status",
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["ativa", "suspensa", "expirada", "reembolsada"]
+          "selectValues": [
+            "ativa",
+            "suspensa",
+            "expirada",
+            "reembolsada"
+          ]
         },
         {
           "name": "expira_em",
@@ -526,10 +572,14 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         }
       ],
-      "indexes": ["CREATE UNIQUE INDEX idx_matriculas_user_curso ON matriculas (user, curso)"]
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_matriculas_user_curso ON matriculas (user, curso)"
+      ]
     },
     {
       "name": "pagamentos",
@@ -639,10 +689,15 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
-      "indexes": ["CREATE UNIQUE INDEX idx_progresso_user_aula ON progresso_aulas (user, aula)"]
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_progresso_user_aula ON progresso_aulas (user, aula)"
+      ]
     },
     {
       "name": "log_acessos",
@@ -674,7 +729,10 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["matricula", "amostra"]
+          "selectValues": [
+            "matricula",
+            "amostra"
+          ]
         },
         {
           "name": "ip_hash",

@@ -63,6 +63,7 @@ routerAdd('POST', '/backend/v1/checkout', (e) => {
   if (auth && cursoIds.length) {
     for (var i = 0; i < cursoIds.length; i++) {
       try {
+        // sort '' — `matriculas` não tem o campo `created`.
         var ms = app.findRecordsByFilter(
           'matriculas',
           "user = {:u} && curso = {:c} && status = 'ativa'",

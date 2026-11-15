@@ -72,10 +72,14 @@ routerAdd(
         }
         if (auth) {
           try {
+            // ATENÇÃO: sort '' e NÃO '-created'. `matriculas` não tem campo
+            // `created` (tem `criado_em`), e ordenar por campo inexistente faz
+            // a consulta LANÇAR — o catch engolia e quem tinha matrícula era
+            // tratado como sem acesso. Bug real, provado em 15/11.
             var ms = app.findRecordsByFilter(
               'matriculas',
               "user = {:u} && curso = {:c} && status = 'ativa'",
-              '-created',
+              '',
               1,
               0,
               { u: auth.id, c: curso.id },

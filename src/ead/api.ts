@@ -399,6 +399,13 @@ export const api = {
     )
   },
 
+  // ---- status do pedido (tela de obrigado) ----
+  // Só LÊ o status. Quem libera o acesso é o webhook / a reconciliação —
+  // se esta rota liberasse, bastaria abrir a URL com um id para ganhar o curso.
+  async statusPedido(pedidoId: string): Promise<{ status: string; pagamento: string }> {
+    return pedir(`/backend/v1/pedido/${encodeURIComponent(pedidoId)}/status`)
+  },
+
   // ---- vouchers (aluno) ----
   async resgatarVoucher(codigo: string, cursoSlug?: string) {
     return pedir<{ ok: boolean; mensagem?: string; cursos?: string[]; area?: string }>(

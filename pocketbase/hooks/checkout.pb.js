@@ -1,8 +1,31 @@
-// POST /backend/v1/checkout — cria preferência no Mercado Pago Checkout Pro.
-// Regras: o VALOR VEM DO BANCO (qualquer preço no corpo é ignorado); produto
-// inativo ou sem preço recusa; quem já tem matrícula recebe 409;
-// external_reference = id do pedido, para o webhook casar sem adivinhar.
-// Libs inlinadas: require local não funciona no Skip.
+// POST /backend/v1/checkout — cria a cobrança no Mercado Pago.
+//
+// MUDANÇA 16/11 (pedido do dono): migração para a **Orders API**, porque o
+// painel do Mercado Pago avisa que a API de Preferências "será descontinuada
+// em breve". Orders é o caminho suportado daqui para frente.
+//
+// ORDERS E PREFERENCES CONVIVEM — e o código usa isso a favor:
+//   1. Tenta Orders (POST /v1/orders) → devolve `checkout_url`.
+//   2. Se o gateway recusar (conta sem Orders habilitado, 400/404), cai para
+//      Preferences (POST /checkout/preferences) → devolve `init_point`.
+//   3. Registra em `pedidos.gateway` qual caminho foi usado
+//      ('mercadopago-orders' ou 'mercadopago'), porque o webhook e o cron
+//      precisam saber onde consultar depois.
+//
+// POR QUE A QUEDA AUTOMÁTICA: sem ela, um detalhe de habilitação na conta
+// (fora do meu alcance) derrubaria a venda inteira. Com ela, a venda acontece
+// e o pior caso é continuar no fluxo antigo — visível no log, não invisível.
+//
+// O QUE NÃO MUDA (e é o que protege o dono):
+//   * O VALOR VEM DO BANCO. Preço no corpo é ignorado — senão qualquer um
+//     compraria por R$ 1 editando o request.
+//   * Produto inativo ou sem preço recusa.
+//   * Quem já tem matrícula recebe 409 em vez de pagar duas vezes.
+//   * `external_reference` = id do pedido: é como o webhook casa o pagamento
+//     sem adivinhar por e-mail.
+//
+// Libs INLINE: require local não funciona no JSVM deste projeto.
+
 routerAdd('POST', '/backend/v1/checkout', (e) => {
   const comum = {
     segredo: function (nome) {
@@ -25,8 +48,23 @@ routerAdd('POST', '/backend/v1/checkout', (e) => {
     emailValido: function (v) {
       return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(v || ''))
     },
-    jsonErro: function (e, status, codigo, mensagem) {
-      return e.json(status, { codigo: codigo, mensagem: mensagem })
+    // Orders exige valor como string com 2 casas ("197.00"), não número.
+    reais: function (centavos) {
+      return (Math.round(Number(centavos)) / 100).toFixed(2)
+    },
+    // O nome do comprador vem inteiro; Orders separa em first/last.
+    primeiroNome: function (nome) {
+      var p = String(nome || '')
+        .trim()
+        .split(/\s+/)
+      return p[0] || ''
+    },
+    sobrenome: function (nome) {
+      var p = String(nome || '')
+        .trim()
+        .split(/\s+/)
+      if (p.length < 2) return ''
+      return p.slice(1).join(' ')
     },
   }
 
@@ -39,26 +77,34 @@ routerAdd('POST', '/backend/v1/checkout', (e) => {
   var email = comum.texto(corpo.email).toLowerCase()
   var nome = comum.texto(corpo.nome)
 
-  if (!produtoSlug) return comum.jsonErro(e, 400, 'produto_obrigatorio', 'Produto não informado.')
+  if (!produtoSlug)
+    return e.json(400, { codigo: 'produto_obrigatorio', mensagem: 'Produto não informado.' })
   if (!comum.emailValido(email))
-    return comum.jsonErro(e, 400, 'email_invalido', 'Informe um e-mail válido.')
-  if (nome.length < 2) return comum.jsonErro(e, 400, 'nome_obrigatorio', 'Informe seu nome.')
+    return e.json(400, { codigo: 'email_invalido', mensagem: 'Informe um e-mail válido.' })
+  if (nome.length < 2)
+    return e.json(400, { codigo: 'nome_obrigatorio', mensagem: 'Informe seu nome.' })
 
   var produto = null
   try {
     produto = app.findFirstRecordByFilter('produtos', 'slug = {:s}', { s: produtoSlug })
   } catch (err) {}
   if (!produto || !produto.getBool('ativo')) {
-    return comum.jsonErro(e, 404, 'produto_indisponivel', 'Produto indisponível.')
+    return e.json(404, {
+      codigo: 'produto_indisponivel',
+      mensagem: 'Produto indisponível.',
+    })
   }
 
   // 0 é o marcador de "preço não definido" (PocketBase não guarda null em number).
   var valor = produto.getInt('preco_centavos')
   if (!valor || valor <= 0) {
-    return comum.jsonErro(e, 409, 'produto_sem_preco', 'Este curso ainda não está à venda.')
+    return e.json(409, {
+      codigo: 'produto_sem_preco',
+      mensagem: 'Este curso ainda não está à venda.',
+    })
   }
 
-  // R8 — não vender duas vezes o que a pessoa já tem.
+  // Não vender duas vezes o que a pessoa já tem.
   var cursoIds = produto.getStringSlice('cursos') || []
   if (auth && cursoIds.length) {
     for (var i = 0; i < cursoIds.length; i++) {
@@ -83,7 +129,8 @@ routerAdd('POST', '/backend/v1/checkout', (e) => {
     }
   }
 
-  // Pedido primeiro: se o gateway falhar, fica o registro do que se tentou.
+  // Pedido primeiro: se o gateway falhar, fica o registro do que se tentou
+  // (é o que permite recuperar a venda em vez de perder o cliente).
   var pedido = null
   try {
     var colPed = app.findCollectionByNameOrId('pedidos')
@@ -97,9 +144,8 @@ routerAdd('POST', '/backend/v1/checkout', (e) => {
     pedido.set('gateway', 'mercadopago')
     app.save(pedido)
   } catch (err3) {
-    // LOG OBRIGATÓRIO do motivo real. Sem isto, a resposta é sempre
-    // "pedido_falhou" e nem eu nem o dono sabemos o que consertar — foi o que
-    // aconteceu entre 15/11 e 16/11: checkout respondia 500 sem pista nenhuma.
+    // LOG OBRIGATÓRIO do motivo real: sem isto a resposta é sempre
+    // "pedido_falhou" e ninguém sabe o que consertar.
     console.log('[ead] pedido_falhou: ' + err3.message)
     try {
       if (err3.data) console.log('[ead] pedido_falhou dados: ' + JSON.stringify(err3.data))
@@ -122,81 +168,158 @@ routerAdd('POST', '/backend/v1/checkout', (e) => {
   }
 
   var base = comum.segredo('EAD_URL_PUBLICA') || 'https://wms-base-eficiencia-c56b6.goskip.app'
-  var preferencia = {
+  var titulo = produto.getString('titulo') || produtoSlug
+  var idemKey = 'pedido-' + pedido.id
+
+  // ---- 1. Orders (caminho novo) ----
+  var corpoOrders = {
+    type: 'online',
+    // Checkout Pro no Orders só aceita `manual`: o processamento acontece
+    // depois, no ambiente do Mercado Pago.
+    processing_mode: 'manual',
+    total_amount: comum.reais(valor),
+    external_reference: pedido.id,
+    payer: {
+      email: email,
+      first_name: comum.primeiroNome(nome),
+      last_name: comum.sobrenome(nome),
+    },
     items: [
       {
-        id: produto.getString('slug'),
-        title: produto.getString('titulo'),
+        title: titulo,
         quantity: 1,
-        currency_id: produto.getString('moeda') || 'BRL',
-        unit_price: valor / 100,
+        unit_price: comum.reais(valor),
       },
     ],
-    payer: { name: nome, email: email },
-    external_reference: pedido.id,
-    back_urls: {
-      success: base + '/ead/obrigado?pedido=' + pedido.id,
-      pending: base + '/ead/obrigado?pedido=' + pedido.id,
-      failure: base + '/ead/obrigado?pedido=' + pedido.id,
+    config: {
+      statement_descriptor: 'WMS EAD',
+      online: {
+        success_url: base + '/ead/obrigado?pedido=' + pedido.id,
+        pending_url: base + '/ead/obrigado?pedido=' + pedido.id,
+        failure_url: base + '/ead/obrigado?pedido=' + pedido.id,
+      },
     },
-    notification_url: base + '/backend/v1/webhooks/mercadopago',
-    statement_descriptor: 'WMS EAD',
   }
-  if (base.indexOf('https://') === 0) preferencia.auto_return = 'approved'
+  if (base.indexOf('https://') === 0) corpoOrders.config.online.auto_return = 'approved'
 
-  var resp = null
+  var link = ''
+  var usou = ''
+  var ultimoErro = ''
+
   try {
-    resp = $http.send({
-      url: 'https://api.mercadopago.com/checkout/preferences',
+    var rOrders = $http.send({
+      url: 'https://api.mercadopago.com/v1/orders',
       method: 'POST',
       headers: {
         Authorization: 'Bearer ' + token,
         'Content-Type': 'application/json',
-        'X-Idempotency-Key': 'pedido-' + pedido.id,
+        'X-Idempotency-Key': idemKey,
       },
-      body: JSON.stringify(preferencia),
+      body: JSON.stringify(corpoOrders),
       timeout: 25,
     })
-  } catch (err4) {
-    console.log('[ead] MP indisponivel: ' + err4.message)
-    return e.json(503, {
-      codigo: 'pagamento_indisponivel',
-      mensagem: 'Pagamento indisponível, tente em alguns minutos.',
-      pedido: pedido.id,
-    })
-  }
-
-  if (!resp || resp.statusCode < 200 || resp.statusCode >= 300) {
-    console.log('[ead] MP respondeu ' + (resp ? resp.statusCode : 'sem resposta'))
-    return e.json(503, {
-      codigo: 'pagamento_indisponivel',
-      mensagem: 'Pagamento indisponível, tente em alguns minutos.',
-      pedido: pedido.id,
-    })
-  }
-
-  var dados = {}
-  try {
-    dados = JSON.parse(toString(resp.body))
-  } catch (err5) {}
-  try {
-    if (dados.id) {
-      pedido.set('pref_id', String(dados.id))
-      app.save(pedido)
+    if (rOrders && rOrders.statusCode >= 200 && rOrders.statusCode < 300) {
+      var dOrders = {}
+      try {
+        dOrders = JSON.parse(toString(rOrders.body))
+      } catch (_) {}
+      if (dOrders.checkout_url) {
+        link = String(dOrders.checkout_url)
+        usou = 'orders'
+        try {
+          pedido.set('gateway', 'mercadopago-orders')
+          if (dOrders.id) pedido.set('order_id', String(dOrders.id))
+          app.save(pedido)
+        } catch (errOrd) {
+          console.log('[ead] nao gravou order_id: ' + errOrd.message)
+        }
+      } else {
+        ultimoErro = 'orders sem checkout_url'
+      }
+    } else {
+      ultimoErro = 'orders HTTP ' + (rOrders ? rOrders.statusCode : 'sem resposta')
+      try {
+        console.log(
+          '[ead] orders recusou: ' + ultimoErro + ' ' + toString(rOrders.body).substring(0, 300),
+        )
+      } catch (_) {}
     }
-  } catch (err6) {
-    console.log('[ead] nao gravou pref_id: ' + err6.message)
+  } catch (errOrders) {
+    ultimoErro = 'orders exception: ' + errOrders.message
+    console.log('[ead] ' + ultimoErro)
   }
 
-  var link = dados.init_point || dados.sandbox_init_point || ''
+  // ---- 2. Preferences (queda, enquanto a conta não aceitar Orders) ----
   if (!link) {
-    return comum.jsonErro(
-      e,
-      502,
-      'gateway_resposta_invalida',
-      'O pagamento não retornou um link. Tente de novo.',
-    )
+    var preferencia = {
+      items: [
+        {
+          id: produtoSlug,
+          title: titulo,
+          quantity: 1,
+          currency_id: produto.getString('moeda') || 'BRL',
+          unit_price: valor / 100,
+        },
+      ],
+      payer: { name: nome, email: email },
+      external_reference: pedido.id,
+      back_urls: {
+        success: base + '/ead/obrigado?pedido=' + pedido.id,
+        pending: base + '/ead/obrigado?pedido=' + pedido.id,
+        failure: base + '/ead/obrigado?pedido=' + pedido.id,
+      },
+      notification_url: base + '/backend/v1/webhooks/mercadopago',
+      statement_descriptor: 'WMS EAD',
+    }
+    if (base.indexOf('https://') === 0) preferencia.auto_return = 'approved'
+
+    try {
+      var rPref = $http.send({
+        url: 'https://api.mercadopago.com/checkout/preferences',
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + token,
+          'Content-Type': 'application/json',
+          'X-Idempotency-Key': idemKey,
+        },
+        body: JSON.stringify(preferencia),
+        timeout: 25,
+      })
+      if (rPref && rPref.statusCode >= 200 && rPref.statusCode < 300) {
+        var dPref = {}
+        try {
+          dPref = JSON.parse(toString(rPref.body))
+        } catch (_) {}
+        link = dPref.init_point || dPref.sandbox_init_point || ''
+        usou = 'preferences'
+        try {
+          pedido.set('gateway', 'mercadopago')
+          if (dPref.id) pedido.set('pref_id', String(dPref.id))
+          app.save(pedido)
+        } catch (errPref) {
+          console.log('[ead] nao gravou pref_id: ' + errPref.message)
+        }
+      } else {
+        console.log(
+          '[ead] preferences recusou: HTTP ' +
+            (rPref ? rPref.statusCode : 'sem resposta') +
+            ' ' +
+            toString(rPref.body).substring(0, 300),
+        )
+      }
+    } catch (errPref2) {
+      console.log('[ead] preferences exception: ' + errPref2.message)
+    }
   }
 
-  return e.json(200, { pedido: pedido.id, link: link })
+  if (!link) {
+    console.log('[ead] checkout sem link. orders: ' + ultimoErro)
+    return e.json(503, {
+      codigo: 'pagamento_indisponivel',
+      mensagem: 'Pagamento indisponível, tente em alguns minutos.',
+      pedido: pedido.id,
+    })
+  }
+
+  return e.json(200, { pedido: pedido.id, link: link, api: usou })
 })

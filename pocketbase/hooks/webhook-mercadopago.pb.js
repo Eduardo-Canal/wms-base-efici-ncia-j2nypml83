@@ -1,8 +1,28 @@
-// POST /backend/v1/webhooks/mercadopago — libera acesso quando o pagamento cai.
-// Ordem: lê o corpo → valida HMAC ANTES de gravar → grava em pagamentos com
-// payment_id único (idempotência) → se já processado, responde 200 e sai →
-// processa (consulta o gateway e libera). Libs inlinadas: require local não
-// funciona no Skip. Segredo sempre por $secrets.get.
+// POST /backend/v1/webhooks/mercadopago — libera o acesso quando o pagamento cai.
+//
+// MUDANÇA 16/11 (migração para a Orders API): o Mercado Pago agora notifica
+// dois formatos, e este endpoint aceita os dois:
+//
+//   type = "payment"  → API de Preferências (fluxo antigo)
+//                        dado: PAY...  → GET /v1/payments/{id}
+//                        pago quando status = "approved"
+//
+//   type = "order"    → Orders API (fluxo novo)
+//                        dado: ORD...  → GET /v1/orders/{id}
+//                        pago quando status = "processed"
+//
+// POR QUE NÃO SÓ ORDERS: pedidos criados antes da migração, e o fallback do
+// checkout, ainda geram notificação de `payment`. Se o webhook só entendesse
+// Orders, uma venda no caminho antigo ficaria sem liberação — o cliente paga e
+// não recebe acesso. Aceitar os dois é o que mantém a promessa.
+//
+// ORDEM DAS OPERAÇÕES (não mudar sem motivo):
+//   1. lê o corpo → 2. valida HMAC ANTES de gravar → 3. grava em `pagamentos`
+//   com id único (idempotência) → 4. se já processado, responde 200 e sai →
+//   5. consulta o gateway e libera.
+//
+// Libs INLINE: require local não funciona no JSVM deste projeto.
+
 routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
   const comum = {
     segredo: function (nome) {
@@ -20,11 +40,12 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
       }
     },
     hmachex: function (dados, chave) {
+      // ORDEM IMPORTA: hs256(dados, chave). Invertida, nunca valida — e a
+      // assinatura válida era recusada em silêncio.
       return String($security.hs256(String(dados), String(chave)))
     },
-    // Comparacao em tempo constante feita a mao. NAO usar $security.equal:
-    // ele lancou excecao neste runtime e o try/catch devolvia false sempre —
-    // resultado: assinatura valida era recusada como invalida (testado).
+    // Comparação em tempo constante, feita à mão: $security.equal lançou
+    // exceção neste runtime e o try/catch devolvia false sempre (testado).
     iguais: function (a, b) {
       var x = String(a)
       var y = String(b)
@@ -40,6 +61,12 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
     },
     agoraIso: function () {
       return new Date().toISOString()
+    },
+    // Orders devolve valor em string ("197.00"); Preferences em número.
+    centavos: function (v) {
+      var n = Number(String(v === undefined || v === null ? 0 : v).replace(',', '.'))
+      if (isNaN(n)) return 0
+      return Math.round(n * 100)
     },
   }
 
@@ -61,7 +88,13 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
   }
 
   if (!dataId) return e.json(200, { recebido: true, ignorado: 'sem_data_id' })
-  if (tipo && tipo !== 'payment') return e.json(200, { recebido: true, ignorado: 'tipo_' + tipo })
+
+  // Aceita 'payment' (Preferences) e 'order' (Orders). Qualquer outro tópico
+  // (merchant_order, subscription...) é reconhecido com 200 e ignorado — sem
+  // isso o MP fica reenviando por 15 min.
+  if (tipo && tipo !== 'payment' && tipo !== 'order') {
+    return e.json(200, { recebido: true, ignorado: 'tipo_' + tipo })
+  }
 
   // ---- assinatura: validada ANTES de qualquer gravação ----
   var segredo = comum.segredo('MP_WEBHOOK_SECRET')
@@ -85,11 +118,10 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
   if (!ts || !v1)
     return e.json(401, { codigo: 'assinatura_ausente', mensagem: 'Assinatura ausente.' })
 
-  // A string canonica do MP inclui o x-request-id QUANDO ele existe. Medido em
-  // 15/11: o proxy da plataforma injeta o proprio x-request-id, que nao e o que
-  // o MP assinou — e a conta nao fecha. Solucao: aceitar as duas formas, com e
-  // sem o request-id. Nao afrouxa a seguranca: continua exigindo HMAC valido
-  // sobre um dos dois textos canonicos.
+  // A string canônica inclui o x-request-id QUANDO ele existe. Medido em 15/11:
+  // o proxy da plataforma injeta o próprio x-request-id, que não é o que o MP
+  // assinou. Solução: aceitar as duas formas. Não afrouxa a segurança —
+  // continua exigindo HMAC válido sobre um dos dois textos canônicos.
   var requestId = comum.texto(e.request.header.get('x-request-id'))
   var canonicaSem = 'id:' + dataId + ';ts:' + ts + ';'
   var canonicaCom = 'id:' + dataId + ';'
@@ -105,9 +137,13 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
   }
 
   // ---- idempotência ----
+  // payment_id guarda o id do recurso notificado (PAY... ou ORD...). O sufixo
+  // de tipo evita colisão teórica entre um PAY e um ORD de mesmo valor textual.
+  var chaveRecurso = (tipo === 'order' ? 'ord:' : 'pay:') + dataId
+
   var existente = null
   try {
-    existente = app.findFirstRecordByFilter('pagamentos', 'payment_id = {:p}', { p: dataId })
+    existente = app.findFirstRecordByFilter('pagamentos', 'payment_id = {:p}', { p: chaveRecurso })
   } catch (err) {}
   if (existente && existente.getBool('processado')) {
     return e.json(200, { recebido: true, duplicado: true })
@@ -116,8 +152,8 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
     try {
       var col = app.findCollectionByNameOrId('pagamentos')
       var p = new Record(col)
-      p.set('gateway', 'mercadopago')
-      p.set('payment_id', dataId)
+      p.set('gateway', tipo === 'order' ? 'mercadopago-orders' : 'mercadopago')
+      p.set('payment_id', chaveRecurso)
       p.set('status', 'recebido')
       p.set('valor_centavos', 0)
       p.set('recebido_em', comum.agoraIso())
@@ -134,8 +170,14 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
     var token = comum.segredo('MP_ACCESS_TOKEN')
     if (!token) return e.json(200, { recebido: true, aguardando: 'token_ausente' })
 
+    // ---- consulta o recurso no gateway (nunca confia só no corpo) ----
+    var url =
+      tipo === 'order'
+        ? 'https://api.mercadopago.com/v1/orders/' + encodeURIComponent(dataId)
+        : 'https://api.mercadopago.com/v1/payments/' + encodeURIComponent(dataId)
+
     var resp = $http.send({
-      url: 'https://api.mercadopago.com/v1/payments/' + encodeURIComponent(dataId),
+      url: url,
       method: 'GET',
       headers: { Authorization: 'Bearer ' + token },
       timeout: 25,
@@ -144,24 +186,54 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
       return e.json(200, { recebido: true, aguardando: 'gateway' })
     }
 
-    var pg = JSON.parse(toString(resp.body))
-    var status = String(pg.status || '')
-    existente.set('status', status)
-    var valor = Math.round(Number(pg.transaction_amount || 0) * 100)
+    var recurso = JSON.parse(toString(resp.body))
+    var statusGw = comum.texto(recurso.status)
+
+    // Traduz os dois vocabulários para um só, porque o resto do sistema
+    // (pedido, matrícula, painel) só conhece: pago / recusado / reembolsado.
+    var pago = false
+    var recusado = false
+    var reembolsado = false
+
+    if (tipo === 'order') {
+      // Orders: processed = pagamento efetivado. `status_detail` diz se foi
+      // integral (accredited) ou parcial (partially_refunded).
+      if (statusGw === 'processed') pago = true
+      else if (statusGw === 'refunded') reembolsado = true
+      else if (statusGw === 'failed' || statusGw === 'canceled' || statusGw === 'cancelled')
+        recusado = true
+      // 'created', 'processing', 'action_required' → aguardando, cai no else.
+    } else {
+      if (statusGw === 'approved') pago = true
+      else if (statusGw === 'refunded' || statusGw === 'charged_back') reembolsado = true
+      else if (statusGw === 'rejected' || statusGw === 'cancelled') recusado = true
+    }
+
+    existente.set('status', statusGw)
+
+    var valor = 0
+    if (tipo === 'order') {
+      valor = comum.centavos(recurso.total_paid_amount || recurso.total_amount || 0)
+    } else {
+      valor = comum.centavos(recurso.transaction_amount || 0)
+    }
     if (valor > 0) existente.set('valor_centavos', valor)
+
     try {
-      existente.set('payload_bruto', pg)
+      existente.set('payload_bruto', recurso)
     } catch (x4) {}
 
+    // ---- acha o pedido: external_reference é o caminho normal ----
     var pedido = null
-    var pedidoId = comum.texto(pg.external_reference)
+    var pedidoId = comum.texto(recurso.external_reference)
     if (pedidoId) {
       try {
         pedido = app.findRecordById('pedidos', pedidoId)
       } catch (x5) {}
     }
+    // Plano B: e-mail do pagador. Em Orders o pagador está em `payer.email`.
     if (!pedido) {
-      var email = comum.texto(pg.payer && pg.payer.email).toLowerCase()
+      var email = comum.texto(recurso.payer && recurso.payer.email).toLowerCase()
       if (email) {
         try {
           pedido = app.findFirstRecordByFilter(
@@ -180,9 +252,18 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
     }
     existente.set('pedido', pedido.id)
 
-    if (status === 'approved') {
+    // Id do pagamento para o painel/recibo: em Orders fica dentro de transactions.
+    var idPagamento = dataId
+    if (tipo === 'order') {
+      try {
+        var trs = recurso.transactions && recurso.transactions.payments
+        if (trs && trs.length && trs[0].id) idPagamento = String(trs[0].id)
+      } catch (_) {}
+    }
+
+    if (pago) {
       pedido.set('status', 'pago')
-      pedido.set('pagamento_id', dataId)
+      pedido.set('pagamento_id', idPagamento)
       app.save(pedido)
 
       var usuario = null
@@ -226,6 +307,9 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
           } catch (x10) {}
           if (!tem) {
             try {
+              // A matrícula criada aqui dispara o e-mail de liberação
+              // (hooks/acesso-email.pb.js, evento de banco) — por isso o
+              // aviso sai por qualquer caminho, não só por este.
               var mcol = app.findCollectionByNameOrId('matriculas')
               var m = new Record(mcol)
               m.set('user', usuario.id)
@@ -240,30 +324,33 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
           }
         }
       }
-    } else if (status === 'rejected' || status === 'cancelled') {
+    } else if (recusado) {
       pedido.set('status', 'recusado')
-      pedido.set('pagamento_id', dataId)
+      pedido.set('pagamento_id', idPagamento)
       app.save(pedido)
-    } else if (status === 'refunded' || status === 'charged_back') {
+    } else if (reembolsado) {
       pedido.set('status', 'reembolsado')
-      pedido.set('pagamento_id', dataId)
+      pedido.set('pagamento_id', idPagamento)
       app.save(pedido)
       try {
-        var ms = app.findRecordsByFilter('matriculas', 'pedido = {:p}', '', 50, 0, { p: pedido.id })
+        var ms = app.findRecordsByFilter('matriculas', 'pedido = {:p}', '', 50, 0, {
+          p: pedido.id,
+        })
         for (var k = 0; k < ms.length; k++) {
           ms[k].set('status', 'reembolsada')
           app.save(ms[k])
         }
       } catch (x12) {}
     } else {
+      // created / processing / action_required: ainda vai acontecer.
       existente.set('processado', false)
       app.save(existente)
-      return e.json(200, { recebido: true, aguardando: status })
+      return e.json(200, { recebido: true, aguardando: statusGw })
     }
 
     existente.set('processado', true)
     app.save(existente)
-    return e.json(200, { recebido: true, status: status })
+    return e.json(200, { recebido: true, api: tipo, status: statusGw })
   } catch (err3) {
     console.log('[ead] erro ao processar pagamento: ' + err3.message)
     return e.json(200, { recebido: true, aguardando: 'erro' })

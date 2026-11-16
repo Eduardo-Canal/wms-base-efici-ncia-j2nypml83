@@ -125,6 +125,28 @@ routerAdd(
           })
         }
 
+        // Capítulos (partes) do curso — o dono decidiu (16/11) que o
+        // Capítulo 2 entra como mais módulos no MESMO curso, então o nível de
+        // agrupamento é o que dá a divisão visível para o aluno.
+        const partes = []
+        try {
+          const listaPartes = $app.findRecordsByFilter('partes', 'curso = {:c}', 'ordem', 100, 0, {
+            c: c.id,
+          })
+          for (let p = 0; p < listaPartes.length; p++) {
+            const pp = listaPartes[p]
+            partes.push({
+              id: pp.id,
+              slug: pp.getString('slug'),
+              titulo: pp.getString('titulo'),
+              rotulo: pp.getString('rotulo'),
+              resumo: pp.getString('resumo'),
+              ordem: pp.getInt('ordem'),
+              publicado: pp.getBool('publicado'),
+            })
+          }
+        } catch (_) {}
+
         let produto = null
         try {
           produto = $app.findFirstRecordByFilter('produtos', 'cursos ~ {:c}', { c: c.id })
@@ -137,6 +159,15 @@ routerAdd(
           publicado: c.getBool('publicado'),
           carga_min: c.getInt('carga_min'),
           produto_slug: produto ? produto.getString('slug') : '',
+          // dados do certificado (decisão: por curso)
+          cert_ativo: c.getBool('cert_ativo'),
+          cert_titulo: c.getString('cert_titulo'),
+          cert_texto: c.getString('cert_texto'),
+          cert_carga_horas: c.getInt('cert_carga_horas'),
+          cert_assinante_nome: c.getString('cert_assinante_nome'),
+          cert_assinante_cargo: c.getString('cert_assinante_cargo'),
+          cert_cidade: c.getString('cert_cidade'),
+          partes: partes,
           modulos: modulos,
         })
       }
@@ -259,6 +290,180 @@ routerAdd(
       console.log('[ead] admin/modulo falhou: ' + err.message)
       return e.json(400, {
         codigo: 'modulo_falhou',
+        mensagem: 'Não foi possível salvar: ' + err.message,
+      })
+    }
+  },
+  $apis.requireAuth(),
+)
+
+// ---------------------------------------------------------------------------
+// POST /backend/v1/admin/parte — cria ou edita um capítulo
+// ---------------------------------------------------------------------------
+routerAdd(
+  'POST',
+  '/backend/v1/admin/parte',
+  (e) => {
+    const texto = (v) => (v === undefined || v === null ? '' : String(v).trim())
+
+    const auth = e.requestInfo().auth
+    if (!auth) return e.json(401, { codigo: 'precisa_login', mensagem: 'Entre para continuar.' })
+    let admin = false
+    try {
+      if (auth.collection().name === '_superusers') admin = true
+      else admin = String(auth.get('papel')) === 'admin'
+    } catch (_) {}
+    if (!admin)
+      return e.json(403, { codigo: 'sem_permissao', mensagem: 'Só o administrador edita.' })
+
+    let corpo = {}
+    try {
+      corpo = e.requestInfo().body || {}
+    } catch (_) {}
+
+    const id = texto(corpo.id)
+    const cursoSlug = texto(corpo.curso_slug)
+    const titulo = texto(corpo.titulo)
+    const rotulo = texto(corpo.rotulo)
+    const resumo = texto(corpo.resumo)
+    const publicado = corpo.publicado === true || corpo.publicado === 'true'
+
+    if (!titulo)
+      return e.json(400, { codigo: 'titulo_obrigatorio', mensagem: 'Nomeie o capítulo.' })
+
+    try {
+      let parte = null
+      if (id) {
+        parte = $app.findRecordById('partes', id)
+      } else {
+        const curso = $app.findFirstRecordByFilter('cursos', 'slug = {:s}', { s: cursoSlug })
+        const col = $app.findCollectionByNameOrId('partes')
+        parte = new Record(col)
+        parte.set('curso', curso.id)
+        const prefixo = curso.getString('slug').split('-')[0]
+        let n = 1
+        try {
+          const existentes = $app.findRecordsByFilter('partes', 'curso = {:c}', 'ordem', 100, 0, {
+            c: curso.id,
+          })
+          n = existentes.length + 1
+        } catch (_) {}
+        parte.set('slug', prefixo + '-p' + String(n).padStart(2, '0'))
+        // Rótulo humano automático: "Capítulo N". O dono não precisa digitar;
+        // se quiser "Parte I" ou outro nome, sobrescreve.
+        parte.set('rotulo', 'Capítulo ' + n)
+      }
+
+      parte.set('titulo', titulo)
+      if (rotulo) parte.set('rotulo', rotulo)
+      if (resumo) parte.set('resumo', resumo)
+      parte.set('publicado', publicado)
+
+      if (!id) {
+        let ordem = 1
+        try {
+          const existentes = $app.findRecordsByFilter('partes', 'curso = {:c}', 'ordem', 100, 0, {
+            c: parte.getString('curso'),
+          })
+          let maior = 0
+          for (let i = 0; i < existentes.length; i++) {
+            const o = existentes[i].getInt('ordem')
+            if (o > maior) maior = o
+          }
+          ordem = maior + 1
+        } catch (_) {}
+        parte.set('ordem', ordem)
+      }
+
+      $app.save(parte)
+      return e.json(200, {
+        ok: true,
+        id: parte.id,
+        slug: parte.getString('slug'),
+        rotulo: parte.getString('rotulo'),
+        mensagem: 'Capítulo salvo: ' + (parte.getString('rotulo') || titulo),
+      })
+    } catch (err) {
+      console.log('[ead] admin/parte falhou: ' + err.message)
+      return e.json(400, {
+        codigo: 'parte_falhou',
+        mensagem: 'Não foi possível salvar: ' + err.message,
+      })
+    }
+  },
+  $apis.requireAuth(),
+)
+
+// ---------------------------------------------------------------------------
+// POST /backend/v1/admin/curso/certificado — dados de emissão do certificado
+// ---------------------------------------------------------------------------
+routerAdd(
+  'POST',
+  '/backend/v1/admin/curso/certificado',
+  (e) => {
+    const texto = (v) => (v === undefined || v === null ? '' : String(v).trim())
+
+    const auth = e.requestInfo().auth
+    if (!auth) return e.json(401, { codigo: 'precisa_login', mensagem: 'Entre para continuar.' })
+    let admin = false
+    try {
+      if (auth.collection().name === '_superusers') admin = true
+      else admin = String(auth.get('papel')) === 'admin'
+    } catch (_) {}
+    if (!admin)
+      return e.json(403, { codigo: 'sem_permissao', mensagem: 'Só o administrador edita.' })
+
+    let corpo = {}
+    try {
+      corpo = e.requestInfo().body || {}
+    } catch (_) {}
+
+    const cursoSlug = texto(corpo.curso_slug)
+    if (!cursoSlug)
+      return e.json(400, { codigo: 'curso_obrigatorio', mensagem: 'Informe o curso.' })
+
+    let curso = null
+    try {
+      curso = $app.findFirstRecordByFilter('cursos', 'slug = {:s}', { s: cursoSlug })
+    } catch (_) {}
+    if (!curso) return e.json(404, { codigo: 'curso_inexistente', mensagem: 'Curso não existe.' })
+
+    const ativo = corpo.cert_ativo === true || corpo.cert_ativo === 'true'
+    const carga = parseInt(texto(corpo.cert_carga_horas) || '0', 10) || 0
+
+    // Ativar certificado sem assinante ou sem carga geraria um PDF vazio ou
+    // sem valor legal. Recusa e explica, em vez de emitir papel inválido.
+    if (ativo) {
+      if (carga <= 0)
+        return e.json(400, {
+          codigo: 'carga_obrigatoria',
+          mensagem: 'Para ativar, informe a carga horária do certificado.',
+        })
+      if (!texto(corpo.cert_assinante_nome))
+        return e.json(400, {
+          codigo: 'assinante_obrigatorio',
+          mensagem: 'Para ativar, informe quem assina o certificado.',
+        })
+    }
+
+    try {
+      curso.set('cert_ativo', ativo)
+      curso.set('cert_titulo', texto(corpo.cert_titulo))
+      curso.set('cert_texto', texto(corpo.cert_texto))
+      curso.set('cert_carga_horas', carga)
+      curso.set('cert_assinante_nome', texto(corpo.cert_assinante_nome))
+      curso.set('cert_assinante_cargo', texto(corpo.cert_assinante_cargo))
+      curso.set('cert_cidade', texto(corpo.cert_cidade))
+      $app.save(curso)
+      return e.json(200, {
+        ok: true,
+        cert_ativo: ativo,
+        mensagem: ativo ? 'Certificado configurado e ativo.' : 'Certificado desativado.',
+      })
+    } catch (err) {
+      console.log('[ead] admin/curso/certificado falhou: ' + err.message)
+      return e.json(400, {
+        codigo: 'falhou',
         mensagem: 'Não foi possível salvar: ' + err.message,
       })
     }

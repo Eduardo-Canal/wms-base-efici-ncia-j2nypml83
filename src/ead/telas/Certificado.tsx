@@ -9,7 +9,7 @@
 // mesmo motivo do /reset-password.
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { api } from '../ead/api'
+import { api } from '../api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 

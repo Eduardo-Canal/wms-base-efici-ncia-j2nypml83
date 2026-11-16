@@ -89,10 +89,14 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
 
   if (!dataId) return e.json(200, { recebido: true, ignorado: 'sem_data_id' })
 
-  // Aceita 'payment' (Preferences) e 'order' (Orders). Qualquer outro tópico
-  // (merchant_order, subscription...) é reconhecido com 200 e ignorado — sem
-  // isso o MP fica reenviando por 15 min.
-  if (tipo && tipo !== 'payment' && tipo !== 'order') {
+  // Aceita 'payment' (Preferences) e 'order'/'orders' (Orders). O MP usa os
+  // dois nomes para orders: o corpo traz type="order" e a tabela de tópicos do
+  // painel chama o evento de "orders". Aceitar só um dos dois faria a
+  // notificação do fluxo novo cair no "ignorado" — cliente paga e nada acontece.
+  // Qualquer outro tópico (merchant_order, subscription...) é reconhecido com
+  // 200 e ignorado: sem isso o MP reenvia por 15 min à toa.
+  var tipoOrder = tipo === 'order' || tipo === 'orders'
+  if (tipo && tipo !== 'payment' && !tipoOrder) {
     return e.json(200, { recebido: true, ignorado: 'tipo_' + tipo })
   }
 
@@ -139,7 +143,7 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
   // ---- idempotência ----
   // payment_id guarda o id do recurso notificado (PAY... ou ORD...). O sufixo
   // de tipo evita colisão teórica entre um PAY e um ORD de mesmo valor textual.
-  var chaveRecurso = (tipo === 'order' ? 'ord:' : 'pay:') + dataId
+  var chaveRecurso = (tipoOrder ? 'ord:' : 'pay:') + dataId
 
   var existente = null
   try {
@@ -152,7 +156,7 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
     try {
       var col = app.findCollectionByNameOrId('pagamentos')
       var p = new Record(col)
-      p.set('gateway', tipo === 'order' ? 'mercadopago-orders' : 'mercadopago')
+      p.set('gateway', tipoOrder ? 'mercadopago-orders' : 'mercadopago')
       p.set('payment_id', chaveRecurso)
       p.set('status', 'recebido')
       p.set('valor_centavos', 0)
@@ -171,10 +175,9 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
     if (!token) return e.json(200, { recebido: true, aguardando: 'token_ausente' })
 
     // ---- consulta o recurso no gateway (nunca confia só no corpo) ----
-    var url =
-      tipo === 'order'
-        ? 'https://api.mercadopago.com/v1/orders/' + encodeURIComponent(dataId)
-        : 'https://api.mercadopago.com/v1/payments/' + encodeURIComponent(dataId)
+    var url = tipoOrder
+      ? 'https://api.mercadopago.com/v1/orders/' + encodeURIComponent(dataId)
+      : 'https://api.mercadopago.com/v1/payments/' + encodeURIComponent(dataId)
 
     var resp = $http.send({
       url: url,
@@ -195,7 +198,7 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
     var recusado = false
     var reembolsado = false
 
-    if (tipo === 'order') {
+    if (tipoOrder) {
       // Orders: processed = pagamento efetivado. `status_detail` diz se foi
       // integral (accredited) ou parcial (partially_refunded).
       if (statusGw === 'processed') pago = true
@@ -212,7 +215,7 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
     existente.set('status', statusGw)
 
     var valor = 0
-    if (tipo === 'order') {
+    if (tipoOrder) {
       valor = comum.centavos(recurso.total_paid_amount || recurso.total_amount || 0)
     } else {
       valor = comum.centavos(recurso.transaction_amount || 0)
@@ -254,7 +257,7 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
 
     // Id do pagamento para o painel/recibo: em Orders fica dentro de transactions.
     var idPagamento = dataId
-    if (tipo === 'order') {
+    if (tipoOrder) {
       try {
         var trs = recurso.transactions && recurso.transactions.payments
         if (trs && trs.length && trs[0].id) idPagamento = String(trs[0].id)

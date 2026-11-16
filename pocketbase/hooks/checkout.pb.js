@@ -172,6 +172,19 @@ routerAdd('POST', '/backend/v1/checkout', (e) => {
   var idemKey = 'pedido-' + pedido.id
 
   // ---- 1. Orders (caminho novo) ----
+  //
+  // NOTA IMPORTANTE (medido na doc em 16/11): Orders NÃO tem `notification_url`
+  // no body — foi removido de propósito. No fluxo novo a notificação se
+  // configura SÓ no painel do MP (Integrações → Webhooks → evento "Order"),
+  // apontando para /backend/v1/webhooks/mercadopago.
+  //
+  // Consequência prática: se a URL não estiver cadastrada no painel, o
+  // checkout funciona (o cliente paga) mas o acesso NÃO é liberado na hora.
+  // Quem salva nesse caso é a reconciliação de 15 min, que consulta o gateway
+  // pelo external_reference sem depender de notificação nenhuma.
+  //
+  // O ramo de Preferences abaixo MANTÉM `notification_url` porque lá o campo
+  // existe e funciona.
   var corpoOrders = {
     type: 'online',
     // Checkout Pro no Orders só aceita `manual`: o processamento acontece

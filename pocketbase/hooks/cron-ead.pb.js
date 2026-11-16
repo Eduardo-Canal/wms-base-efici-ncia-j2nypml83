@@ -297,11 +297,23 @@ cronAdd('ead_reconciliacao_pagamentos', '*/15 * * * *', () => {
     var ped = orfaos[j]
     try {
       // 1) Orders primeiro (fluxo atual do checkout).
+      // ATENÇÃO: GET /v1/orders EXIGE begin_date e end_date (RFC3339). Sem as
+      // datas devolve 400 required_search_params — a busca nunca acharia nada
+      // e o pedido ficaria pendente para sempre. Janela de 30 dias para trás,
+      // que cobre boleto/pix em atraso e é o máximo aceito pelo MP em alguns
+      // países.
       var achou = false
+      var agoraD = new Date()
+      var inicioD = new Date(agoraD.getTime() - 30 * 24 * 3600 * 1000)
       var rBusca = $http.send({
         url:
-          'https://api.mercadopago.com/v1/orders/search?external_reference=' +
-          encodeURIComponent(ped.id),
+          'https://api.mercadopago.com/v1/orders?begin_date=' +
+          encodeURIComponent(inicioD.toISOString()) +
+          '&end_date=' +
+          encodeURIComponent(agoraD.toISOString()) +
+          '&external_reference=' +
+          encodeURIComponent(ped.id) +
+          '&type=online',
         method: 'GET',
         headers: { Authorization: 'Bearer ' + token },
         timeout: 25,
@@ -312,7 +324,8 @@ cronAdd('ead_reconciliacao_pagamentos', '*/15 * * * *', () => {
         try {
           dBusca = JSON.parse(toString(rBusca.body))
         } catch (_) {}
-        var resultados = dBusca.results || dBusca.data || []
+        // A resposta de /v1/orders vem em `data`; a de /v1/payments em `results`.
+        var resultados = dBusca.data || dBusca.results || []
         if (resultados && resultados.length) {
           var ord = resultados[0]
           var stOrd = comum.texto(ord.status)

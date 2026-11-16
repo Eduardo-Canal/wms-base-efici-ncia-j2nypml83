@@ -1,11 +1,13 @@
 // progresso-aula.pb.js — MEDIÇÃO de tempo assistido e conclusão automática.
 //
 //   POST /backend/v1/aula/{slug}/progresso   { segundos, duracao }
-//   POST /backend/v1/aula/{slug}/concluir    (legado: só a equipe)
 //
 // DECISÃO DO DONO (16/11 17:03): conclusão AUTOMÁTICA por tempo assistido
 // (~90% do vídeo) — opção (a) da recomendação. Padrão de mercado (Insight
 // Academy/Panda, EAD Plataforma).
+//
+// (A rota POST /aula/{slug}/concluir vive em concluir-equipe.pb.js: o Skip
+// Cloud exige UM routerAdd por arquivo.)
 //
 // ── POR QUE MEDIR TEMPO E NÃO POSIÇÃO ─────────────────────────────────────
 // `seconds` do player é a POSIÇÃO do playhead. Arrastar a barra para o fim
@@ -21,16 +23,15 @@
 //      Reportar 600 s a cada 2 s não acelera nada.
 //   2. Se a posição PULOU para frente mais do que o tempo decorrido
 //      (seek/arrastar a barra), o excesso NÃO conta: só o tempo de relógio.
-//   3. Se a posição voltou para trás (rebobinou), nada é somado — quem
-//      reassiste não ganha tempo duas vezes.
+//   3. Se a posição voltou para trás (rebobinou), nada é somado.
 //   4. A duração vem do cliente mas é LIMITADA pela `duracao_seg` cadastrada
 //      na aula e, na falta dela, por um teto de 6 h. Sem isso, um cliente
-//      malicioso diria "o vídeo tem 1 segundo" e concluiria na hora.
+//      diria "o vídeo tem 1 segundo" e concluiria na hora.
 //   5. Concluir exige matrícula ativa — igual antes.
 //
 // O que NÃO dá para impedir: um script que abra o player e deixe tocando
-// sozinho. Isso vale para qualquer LMS — inclusive é por isso que o
-// certificado atesta "concluiu o curso", e a tela diz isso.
+// sozinho. Isso vale para qualquer LMS — é por isso que o certificado atesta
+// "concluiu o curso", e a tela diz isso.
 //
 // Libs INLINE (require local não funciona no JSVM deste projeto).
 
@@ -111,21 +112,17 @@ routerAdd(
     } catch (_) {}
 
     let posicao = inteiro(corpo.segundos)
-    let duracaoCli = inteiro(corpo.duracao)
+    const duracaoCli = inteiro(corpo.duracao)
     if (posicao < 0) posicao = 0
 
     // ---- duração confiável ----
     // Cadastro da aula manda. Cliente só é ouvido quando a aula não tem
-    // duração (aula sem vídeo ainda: duracao_seg = 0 é o marcador de
-    // "não definido" neste projeto).
-    let duracao = aula.getInt('duracao_seg')
+    // duração (duracao_seg = 0 é o marcador de "não definido" neste projeto).
+    const durCadastro = aula.getInt('duracao_seg')
+    let duracao = durCadastro
     if (duracao <= 0) duracao = duracaoCli
     if (duracao <= 0) duracao = TETO_DURACAO
     if (duracao > TETO_DURACAO) duracao = TETO_DURACAO
-    if (duracaoCli > 0 && duracaoCli < duracao && aula.getInt('duracao_seg') <= 0) {
-      // aula sem duração cadastrada: aceita o que o player informou
-      duracao = duracaoCli
-    }
 
     // ---- linha de progresso ----
     let linha = null
@@ -242,87 +239,6 @@ routerAdd(
       concluidas: feitas,
       percentual: total > 0 ? Math.round((feitas / total) * 100) : 0,
     })
-  },
-  $apis.requireAuth(),
-)
-
-// ---------------------------------------------------------------------------
-// POST /backend/v1/aula/{slug}/concluir
-//
-// Antes era o botão do aluno. Decisão (a) eliminou o botão: agora só a EQUIPE
-// usa este endpoint, para liberar um acesso em caso de problema real (vídeo
-// que não tocou, aluno que assistiu presencialmente). Manter a rota evita
-// quebrar a tela antiga e deixa o conserto na mão de quem responde.
-// ---------------------------------------------------------------------------
-routerAdd(
-  'POST',
-  '/backend/v1/aula/{slug}/concluir',
-  (e) => {
-    const texto = (v) => (v === undefined || v === null ? '' : String(v).trim())
-
-    const auth = e.requestInfo().auth
-    if (!auth) return e.json(401, { codigo: 'precisa_login', mensagem: 'Entre para continuar.' })
-
-    let equipe = false
-    try {
-      if (auth.collection().name === '_superusers') equipe = true
-      else {
-        const p = String(auth.get('papel'))
-        equipe = p === 'admin' || p === 'suporte'
-      }
-    } catch (_) {}
-    if (!equipe)
-      return e.json(403, {
-        codigo: 'somente_equipe',
-        mensagem: 'A aula é concluída automaticamente ao assistir. Só a equipe marca manualmente.',
-      })
-
-    const slug = texto(e.request.pathValue('slug'))
-    let aula = null
-    try {
-      aula = $app.findFirstRecordByFilter('aulas', 'slug = {:s}', { s: slug })
-    } catch (_) {}
-    if (!aula) return e.json(404, { codigo: 'aula_inexistente', mensagem: 'Aula não encontrada.' })
-
-    // De quem é o progresso: o próprio admin, ou um e-mail informado no corpo.
-    let corpo = {}
-    try {
-      corpo = e.requestInfo().body || {}
-    } catch (_) {}
-    const email = texto(corpo.email).toLowerCase()
-
-    let alvo = auth.id
-    if (email) {
-      let user = null
-      try {
-        user = $app.findAuthRecordByEmail('users', email)
-      } catch (_) {}
-      if (!user)
-        return e.json(404, { codigo: 'aluno_inexistente', mensagem: 'Aluno não encontrado.' })
-      alvo = user.id
-    }
-
-    try {
-      let linha = null
-      try {
-        linha = $app.findFirstRecordByFilter('progresso_aulas', 'user = {:u} && aula = {:a}', {
-          u: alvo,
-          a: aula.id,
-        })
-      } catch (_) {}
-      if (!linha) {
-        const col = $app.findCollectionByNameOrId('progresso_aulas')
-        linha = new Record(col)
-        linha.set('user', alvo)
-        linha.set('aula', aula.id)
-      }
-      linha.set('concluida', true)
-      $app.save(linha)
-    } catch (err) {
-      return e.json(400, { codigo: 'concluir_falhou', mensagem: 'Falhou: ' + err.message })
-    }
-
-    return e.json(200, { ok: true, mensagem: 'Aula marcada como concluída pela equipe.' })
   },
   $apis.requireAuth(),
 )

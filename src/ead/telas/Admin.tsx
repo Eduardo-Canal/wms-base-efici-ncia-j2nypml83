@@ -81,7 +81,23 @@ export default function Admin() {
   if (erro && !cfg)
     return (
       <div className="mx-auto max-w-md px-4 py-20 text-center">
-        <h1 className="text-2xl font-semibold">Administração do EAD</h1>
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-2xl font-semibold">Administração do EAD</h1>
+          <button
+            className="text-sm text-muted-foreground underline"
+            onClick={() => {
+              api.sair()
+              window.location.href = '/ead'
+            }}
+          >
+            Sair
+          </button>
+        </div>
+        <p className="mt-1 text-sm text-muted-foreground">
+          <a href="/ead" className="underline">
+            ← Voltar para os cursos
+          </a>
+        </p>
         <p className="mt-3 text-destructive">{erro}</p>
       </div>
     )

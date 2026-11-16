@@ -1,14 +1,29 @@
-import { Link, Outlet, useLocation } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { BookOpen, Menu } from 'lucide-react'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { useState, useEffect } from 'react'
 import { AMAZON_VOL1 } from '@/lib/links'
+import { api } from '@/ead/api'
+import { useSessao } from '@/ead/useSessao'
 
 export function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
   const isHome = location.pathname === '/'
+
+  // Quem está logado, para o menu oferecer Minha área / Painel / Sair.
+  // Defeito real (16/11): o site não tinha NENHUM caminho para o painel nem
+  // como sair da conta — a pessoa entrava e ficava sem saída.
+  const { sessao, logado } = useSessao()
+  const ehAdmin = sessao?.user?.papel === 'admin' || sessao?.user?.papel === 'suporte'
+
+  function sair() {
+    api.sair()
+    setIsMobileMenuOpen(false)
+    navigate('/ead')
+  }
 
   useEffect(() => {
     if (isHome && location.hash) {
@@ -82,6 +97,39 @@ export function Layout() {
 
           <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
             {renderNavLinks('transition-colors hover:text-primary text-muted-foreground')}
+
+            {/* Acesso à conta: sem isto, quem entra não tem como voltar para a
+                área nem sair. O item "Painel" só aparece para admin/suporte —
+                e mesmo assim quem barra é o servidor. */}
+            {logado ? (
+              <>
+                <Link
+                  to="/ead/minha-area"
+                  className="transition-colors hover:text-primary text-muted-foreground"
+                >
+                  Minha área
+                </Link>
+                {ehAdmin && (
+                  <Link
+                    to="/ead/admin"
+                    className="transition-colors hover:text-primary font-semibold text-primary"
+                  >
+                    Painel
+                  </Link>
+                )}
+                <Button size="sm" variant="outline" onClick={sair}>
+                  Sair
+                </Button>
+              </>
+            ) : (
+              <Link
+                to="/ead/entrar"
+                className="transition-colors hover:text-primary text-muted-foreground"
+              >
+                Entrar
+              </Link>
+            )}
+
             <Button size="sm" asChild>
               <a href={AMAZON_VOL1} target="_blank" rel="noopener noreferrer">
                 Comprar na Amazon
@@ -109,6 +157,44 @@ export function Layout() {
                   </Link>
                   <nav className="flex flex-col space-y-4">
                     {renderNavLinks('text-base font-medium transition-colors hover:text-primary')}
+
+                    {/* Mesma lógica de conta do menu desktop. */}
+                    {logado ? (
+                      <>
+                        <Link
+                          to="/ead/minha-area"
+                          className="text-base font-medium"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          Minha área
+                        </Link>
+                        {ehAdmin && (
+                          <Link
+                            to="/ead/admin"
+                            className="text-base font-semibold text-primary"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                            Painel
+                          </Link>
+                        )}
+                        <button
+                          type="button"
+                          onClick={sair}
+                          className="text-left text-base font-medium text-muted-foreground"
+                        >
+                          Sair
+                        </button>
+                      </>
+                    ) : (
+                      <Link
+                        to="/ead/entrar"
+                        className="text-base font-medium"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Entrar
+                      </Link>
+                    )}
+
                     <div className="pt-4 border-t">
                       <Button className="w-full" asChild onClick={() => setIsMobileMenuOpen(false)}>
                         <a href={AMAZON_VOL1} target="_blank" rel="noopener noreferrer">

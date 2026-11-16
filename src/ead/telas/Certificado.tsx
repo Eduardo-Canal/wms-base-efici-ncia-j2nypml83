@@ -21,6 +21,7 @@ type Dados = {
   carga_horas: number
   assinante_nome: string
   assinante_cargo: string
+  assinatura_url?: string
   emitido_em: string
 }
 
@@ -94,6 +95,16 @@ export default function Certificado() {
               <div>
                 <dt className="text-xs text-muted-foreground">Assinado por</dt>
                 <dd className="font-medium">
+                  {/* A rubrica vem do curso e é vinculada na emissão. Sem ela,
+                      o nome digitado continua valendo — o certificado não fica
+                      quebrado quando não há imagem. */}
+                  {dados.assinatura_url && (
+                    <img
+                      src={dados.assinatura_url}
+                      alt={`Assinatura de ${dados.assinante_nome}`}
+                      className="mb-1 h-14 object-contain"
+                    />
+                  )}
                   {dados.assinante_nome}
                   {dados.assinante_cargo ? ` — ${dados.assinante_cargo}` : ''}
                 </dd>

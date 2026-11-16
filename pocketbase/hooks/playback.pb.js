@@ -28,12 +28,31 @@ routerAdd(
         return false
       }
     }
+    // Área fechada barra a VITRINE, não o aluno que pagou.
+    // (Sem o teste de matrícula aqui, quem comprava antes da liberação recebia
+    // "área não está aberta" ao clicar no link do e-mail — pagou e não entra.)
+    var temMatricula = function (auth) {
+      if (!auth) return false
+      try {
+        var ms = $app.findRecordsByFilter(
+          'matriculas',
+          "user = {:u} && status = 'ativa'",
+          '',
+          1,
+          0,
+          { u: auth.id },
+        )
+        return !!(ms && ms.length)
+      } catch (_) {
+        return false
+      }
+    }
     if (!areaAberta()) {
       var quem = null
       try {
         quem = e.requestInfo().auth
       } catch (_) {}
-      if (!souEquipe(quem)) {
+      if (!souEquipe(quem) && !temMatricula(quem)) {
         return e.json(403, {
           codigo: 'ead_fechado',
           mensagem: 'A área de cursos ainda não está aberta.',

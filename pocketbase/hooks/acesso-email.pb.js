@@ -70,6 +70,21 @@ onRecordAfterCreateSuccess((e) => {
           : 'Seu acesso foi liberado.'
 
     // ---- link: direto para a primeira aula publicada do curso ----
+    //
+    // ATENÇÃO: o e-mail só sai quando a matrícula é criada, e isso pode
+    // acontecer ANTES de a área ser liberada ao público (venda de pré-lançamento,
+    // cortesia, teste). Se o link apontar para /ead/minha-area, o aluno clica e
+    // encontra uma página trancada. Por isso, enquanto a área estiver fechada, o
+    // link é a própria página do curso com o token → a tela reconhece a matrícula
+    // e mostra o conteúdo. Depois de liberada, vai direto para a área do aluno.
+    var areaLiberada = false
+    try {
+      var cfgEad = $app.findFirstRecordByFilter('ead_config', "chave = 'principal'")
+      areaLiberada = cfgEad.getBool('liberado') === true
+    } catch (_) {
+      areaLiberada = false
+    }
+
     let link = 'https://wms-base-eficiencia-c56b6.goskip.app/ead/minha-area'
     try {
       const mods = $app.findRecordsByFilter('modulos', 'curso = {:c}', 'ordem', 50, 0, {

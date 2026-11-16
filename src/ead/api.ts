@@ -108,6 +108,42 @@ export interface Voucher {
   cursos_titulos: string[]
 }
 
+// ---- conteúdo (montagem do curso) ----
+export interface AulaConteudo {
+  id: string
+  slug: string
+  numero: string
+  titulo: string
+  descricao: string
+  ordem: number
+  duracao_seg: number
+  publicado: boolean
+  amostra: boolean
+  pergunta_fixacao: string
+  material_url: string
+  video_id: string
+  video_pronto: boolean
+  tem_aluno: boolean
+}
+
+export interface ModuloConteudo {
+  id: string
+  slug: string
+  titulo: string
+  ordem: number
+  aulas: AulaConteudo[]
+}
+
+export interface CursoConteudo {
+  id: string
+  slug: string
+  titulo: string
+  publicado: boolean
+  carga_min: number
+  produto_slug: string
+  modulos: ModuloConteudo[]
+}
+
 export interface ProdutoAdmin {
   id: string
   slug: string
@@ -411,6 +447,50 @@ export const api = {
     return pedir<{ ok: boolean; mensagem?: string; cursos?: string[]; area?: string }>(
       '/backend/v1/voucher/resgatar',
       { method: 'POST', body: JSON.stringify({ codigo, curso_slug: cursoSlug }) },
+    )
+  },
+
+  // ---- conteúdo do curso (admin) ----
+  async adminConteudo(): Promise<{ total: number; cursos: CursoConteudo[] }> {
+    return pedir('/backend/v1/admin/conteudo')
+  },
+
+  async adminSalvarModulo(dados: {
+    id?: string
+    curso_slug?: string
+    titulo: string
+    ordem?: number
+  }) {
+    return pedir<{ ok: boolean; id: string; slug: string; mensagem?: string }>(
+      '/backend/v1/admin/modulo',
+      { method: 'POST', body: JSON.stringify(dados) },
+    )
+  },
+
+  async adminSalvarAula(dados: {
+    id?: string
+    modulo_id?: string
+    titulo: string
+    descricao?: string
+    numero?: string
+    video_url?: string
+    material_url?: string
+    pergunta_fixacao?: string
+    duracao_min?: number
+    publicado?: boolean
+    amostra?: boolean
+    ordem?: number
+  }) {
+    return pedir<{ ok: boolean; id: string; slug: string; numero: string; mensagem?: string }>(
+      '/backend/v1/admin/aula',
+      { method: 'POST', body: JSON.stringify(dados) },
+    )
+  },
+
+  async adminExcluirAula(id: string) {
+    return pedir<{ ok: boolean; apenas_despublicada?: boolean; mensagem?: string }>(
+      '/backend/v1/admin/aula/excluir',
+      { method: 'POST', body: JSON.stringify({ id }) },
     )
   },
 

@@ -20,7 +20,6 @@ import Admin from './ead/telas/Admin'
 import ResetSenha from './ead/telas/ResetSenha'
 import Voucher from './ead/telas/Voucher'
 import Certificado from './ead/telas/Certificado'
-import Certificado from './ead/telas/Certificado'
 import { useSessao } from './ead/useSessao'
 
 const EadRoutes = () => {
@@ -37,7 +36,6 @@ const EadRoutes = () => {
       <Route path="/reset-password" element={<ResetSenha />} />
       <Route path="/ead/minha-area" element={<MinhaArea logado={logado} />} />
       <Route path="/ead/voucher" element={<Voucher />} />
-      <Route path="/certificado/:codigo" element={<Certificado />} />
       <Route path="/certificado/:codigo" element={<Certificado />} />
       {/* só admin: a tela esconde, mas quem barra é o servidor */}
       <Route path="/ead/admin" element={<Admin />} />

@@ -356,26 +356,46 @@ routerAdd(
         aula = new Record(col)
         aula.set('modulo', modulo.id)
 
-        // Slug: prefixo do curso + aXX. Gerado aqui porque slug digitado à mão
-        // já colidiu neste projeto (a01 sem o curso não identificava nada).
+        // ---- SLUG ----
+        // O número tem que ser a posição da aula NO CURSO, não dentro do
+        // módulo. Contar só as aulas do módulo gera `fund-a01` de novo em cada
+        // módulo novo — o índice único aceita (slug diferente), mas a rota
+        // `/ead/aula/fund-a01` passa a apontar para a aula errada e o
+        // `numero` falado no vídeo fica errado. Defeito encontrado no teste de
+        // 16/11: o módulo 7 gerou `fund-a01` e `M7.1`.
         const prefixo = curso.getString('slug').split('-')[0]
-        let seq = 1
+
+        // 1) posição no curso inteiro = soma das aulas de todos os módulos
+        let aulasNoCurso = 0
         try {
-          const todas = $app.findRecordsByFilter('aulas', 'modulo = {:m}', 'ordem', 500, 0, {
+          const mods = $app.findRecordsByFilter('modulos', 'curso = {:c}', 'ordem', 200, 0, {
+            c: curso.id,
+          })
+          for (let i = 0; i < mods.length; i++) {
+            if (mods[i].id === modulo.id) continue
+            const doMod = $app.findRecordsByFilter('aulas', 'modulo = {:m}', 'ordem', 500, 0, {
+              m: mods[i].id,
+            })
+            aulasNoCurso += doMod ? doMod.length : 0
+          }
+          const neste = $app.findRecordsByFilter('aulas', 'modulo = {:m}', 'ordem', 500, 0, {
             m: modulo.id,
           })
-          seq = todas.length + 1
+          aulasNoCurso += neste ? neste.length : 0
         } catch (_) {}
+        let seq = aulasNoCurso + 1
+
+        // 2) se o slug já existe (aula criada fora do painel), avança até
+        //    achar um livre. Sem isso o save falha no índice único.
         let slug = prefixo + '-a' + String(seq).padStart(2, '0')
-        let tentativa = 1
         while (true) {
           let existe = null
           try {
             existe = $app.findFirstRecordByFilter('aulas', 'slug = {:s}', { s: slug })
           } catch (_) {}
           if (!existe) break
-          tentativa++
-          slug = prefixo + '-a' + String(seq).padStart(2, '0') + '-' + tentativa
+          seq++
+          slug = prefixo + '-a' + String(seq).padStart(2, '0')
         }
         aula.set('slug', slug)
       }
@@ -423,7 +443,7 @@ routerAdd(
       aula.set('ordem', ordem)
 
       if (!numero) {
-        // Rótulo FALADO no vídeo: M<ordem do módulo>.<ordem da aula>
+        // Rótulo FALADO no vídeo: M<ordem do módulo>.<posição da aula no módulo>
         let numMod = 1
         try {
           const mod = $app.findRecordById('modulos', modId)

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-16T00:33:33.455Z",
+  "generatedAt": "2026-11-16T00:43:04.880Z",
   "collections": [
     {
       "name": "users",
@@ -839,6 +839,178 @@
       ],
       "indexes": [
         "CREATE UNIQUE INDEX idx_ead_config_chave ON ead_config (chave)"
+      ]
+    },
+    {
+      "name": "vouchers",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.papel = \"admin\"",
+        "view": "@request.auth.papel = \"admin\"",
+        "create": "@request.auth.papel = \"admin\"",
+        "update": "@request.auth.papel = \"admin\"",
+        "delete": "@request.auth.papel = \"admin\""
+      },
+      "fields": [
+        {
+          "name": "codigo",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "tipo",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "percentual",
+            "valor",
+            "acesso",
+            "livre"
+          ]
+        },
+        {
+          "name": "cursos",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "cursos"
+        },
+        {
+          "name": "percentual",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "valor_centavos",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "limite_usos",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "usos",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "validade",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "email_destino",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "descricao",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ativo",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_vouchers_codigo ON vouchers (codigo)",
+        "CREATE INDEX idx_vouchers_ativo ON vouchers (ativo, tipo)"
+      ]
+    },
+    {
+      "name": "voucher_resgates",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != \"\" && (user = @request.auth.id || @request.auth.papel = \"admin\")",
+        "view": "@request.auth.id != \"\" && (user = @request.auth.id || @request.auth.papel = \"admin\")",
+        "create": null,
+        "update": null,
+        "delete": "@request.auth.papel = \"admin\""
+      },
+      "fields": [
+        {
+          "name": "voucher",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "vouchers"
+        },
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "curso",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "cursos"
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_resgate_voucher_user ON voucher_resgates (voucher, user)",
+        "CREATE INDEX idx_resgate_voucher ON voucher_resgates (voucher)"
       ]
     }
   ]

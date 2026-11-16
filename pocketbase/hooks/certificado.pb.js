@@ -44,11 +44,35 @@ routerAdd(
         c: curso.id,
       })
       if (ja) {
+        // Já emitido: NÃO reescreve nome, curso, carga nem data — o
+        // certificado é um documento do passado e não pode ser alterado por
+        // quem chega depois. A ÚNICA exceção é o ponteiro da rubrica: se o
+        // dono trocou a imagem depois da emissão, o certificado passa a
+        // apontar para a nova (a pessoa continua a mesma, o desenho mudou).
+        const arqAtual = texto(curso.getString('cert_assinatura'))
+        if (arqAtual && !texto(ja.getString('assinatura_arquivo'))) {
+          try {
+            ja.set('assinatura_arquivo', arqAtual)
+            $app.save(ja)
+          } catch (_) {}
+        }
+        let urlRubrica = ''
+        try {
+          if (texto(ja.getString('assinatura_arquivo')))
+            urlRubrica =
+              '/api/files/' +
+              curso.collection().id +
+              '/' +
+              curso.id +
+              '/' +
+              encodeURIComponent(ja.getString('assinatura_arquivo'))
+        } catch (_) {}
         return e.json(200, {
           ok: true,
           ja_emitido: true,
           codigo: ja.getString('codigo'),
           emitido_em: ja.getString('emitido_em'),
+          assinatura_url: urlRubrica,
         })
       }
     } catch (_) {}

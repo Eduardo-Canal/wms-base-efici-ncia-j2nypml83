@@ -167,6 +167,21 @@ routerAdd('POST', '/backend/v1/checkout', (e) => {
     })
   }
 
+  // ---- ambiente de teste ou produção ----
+  //
+  // ATENÇÃO (medido na doc do MP em 16/11): desde 19/11/2025 as credenciais de
+  // teste do Checkout Pro TAMBÉM começam com APP_USR — igual às de produção.
+  // Então NÃO existe como distinguir pelo prefixo do token. Quem diz é o
+  // segredo MP_AMBIENTE, com o valor `teste`. Sem ele, assumimos produção, que
+  // é o comportamento que já existia (e o mais seguro: nunca mandar um cliente
+  // para o sandbox por engano).
+  //
+  // Com `teste`, usamos o link de sandbox quando o gateway oferece um. Sem
+  // isso, quem paga com cartão de teste cai no ambiente real e o teste não
+  // conclui.
+  var ambiente = comum.segredo('MP_AMBIENTE').toLowerCase().trim()
+  var ehTeste = ambiente === 'teste' || ambiente === 'sandbox'
+
   var base = comum.segredo('EAD_URL_PUBLICA') || 'https://wms-base-eficiencia-c56b6.goskip.app'
   var titulo = produto.getString('titulo') || produtoSlug
   var idemKey = 'pedido-' + pedido.id
@@ -239,6 +254,10 @@ routerAdd('POST', '/backend/v1/checkout', (e) => {
       if (dOrders.checkout_url) {
         link = String(dOrders.checkout_url)
         usou = 'orders'
+        // Log do link para conferir no teste se o MP mandou para o sandbox.
+        // Em Orders o domínio do checkout_url muda conforme o ambiente, e não
+        // existe um campo separado de sandbox como nas preferências.
+        console.log('[ead] orders checkout_url (' + (ehTeste ? 'TESTE' : 'PRODUCAO') + '): ' + link)
         try {
           pedido.set('gateway', 'mercadopago-orders')
           if (dOrders.id) pedido.set('order_id', String(dOrders.id))
@@ -303,7 +322,11 @@ routerAdd('POST', '/backend/v1/checkout', (e) => {
         try {
           dPref = JSON.parse(toString(rPref.body))
         } catch (_) {}
-        link = dPref.init_point || dPref.sandbox_init_point || ''
+        // No modo teste, sandbox_init_point é o que leva a pagar com cartão
+        // de teste. Em produção, init_point.
+        link = ehTeste
+          ? dPref.sandbox_init_point || dPref.init_point || ''
+          : dPref.init_point || dPref.sandbox_init_point || ''
         usou = 'preferences'
         try {
           pedido.set('gateway', 'mercadopago')

@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import Conteudo from './Conteudo'
+import CertificadoAdmin from './CertificadoAdmin'
 
 function mensagemDe(e: unknown): string {
   const x = e as { status?: number; codigo?: string; message?: string }
@@ -178,6 +179,8 @@ export default function Admin() {
       </div>
 
       <Conteudo />
+
+      <CertificadoAdmin />
 
       <Produtos />
 

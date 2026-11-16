@@ -131,19 +131,31 @@ routerAdd(
 
     // URL pública da rubrica (a imagem vive no curso).
     //
-    // TEM QUE SER ABSOLUTA, apontando para o BACKEND. Medido em 16/11: o
-    // domínio do site NÃO roteia /api/files (devolve 404 em HTML), porque
-    // /api/* só existe no host do PocketBase. Com caminho relativo a imagem
-    // aparecia quebrada na tela de verificação (naturalWidth 0).
-    // O segredo BACKEND_PUBLICO permite trocar o host sem mexer no código.
+    // TEM QUE SER ABSOLUTA. Medido em 16/11: o domínio do site NÃO roteia
+    // /api/files — devolve 404 em HTML — porque /api/* só existe no host do
+    // PocketBase. Com caminho relativo a imagem aparece quebrada na tela de
+    // verificação (naturalWidth 0), sem erro visível.
+    //
+    // O host vem de segredo quando existir, para não ficar preso a este
+    // projeto; sem segredo, cai no host real do backend.
     function rubricaUrl(cursoRec) {
       var arq = String(cursoRec.getString('cert_assinatura') || '').trim()
       if (!arq) return ''
       var host = ''
       try {
-        host = String($secrets.get('EAD_API_PUBLICA', '') || '')
+        if (typeof $secrets !== 'undefined' && $secrets && typeof $secrets.get === 'function') {
+          var s = $secrets.get('EAD_API_PUBLICA', '')
+          if (s) host = String(s)
+        }
       } catch (_) {}
+      if (!host) {
+        try {
+          host = String($os.getenv('EAD_API_PUBLICA') || '')
+        } catch (_) {}
+      }
       if (!host) host = 'https://wms-base-eficiencia-c56b6.shrd01.internal.goskip.dev'
+      // Remove barra final para não gerar //api/files
+      if (host.charAt(host.length - 1) === '/') host = host.substring(0, host.length - 1)
       return (
         host +
         '/api/files/' +

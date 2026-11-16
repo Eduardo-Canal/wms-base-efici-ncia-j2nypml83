@@ -97,7 +97,18 @@ routerAdd('POST', '/backend/v1/checkout', (e) => {
     pedido.set('gateway', 'mercadopago')
     app.save(pedido)
   } catch (err3) {
-    return comum.jsonErro(e, 500, 'pedido_falhou', 'Não foi possível registrar o pedido.')
+    // LOG OBRIGATÓRIO do motivo real. Sem isto, a resposta é sempre
+    // "pedido_falhou" e nem eu nem o dono sabemos o que consertar — foi o que
+    // aconteceu entre 15/11 e 16/11: checkout respondia 500 sem pista nenhuma.
+    console.log('[ead] pedido_falhou: ' + err3.message)
+    try {
+      if (err3.data) console.log('[ead] pedido_falhou dados: ' + JSON.stringify(err3.data))
+    } catch (_) {}
+    return e.json(500, {
+      codigo: 'pedido_falhou',
+      mensagem: 'Não foi possível registrar o pedido.',
+      detalhe: String(err3.message || '').substring(0, 200),
+    })
   }
 
   var token = comum.segredo('MP_ACCESS_TOKEN')

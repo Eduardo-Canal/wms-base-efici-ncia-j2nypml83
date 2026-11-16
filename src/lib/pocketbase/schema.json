@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-16T00:23:56.994Z",
+  "generatedAt": "2026-11-16T00:33:02.454Z",
   "collections": [
     {
       "name": "users",
@@ -512,9 +512,9 @@
         }
       ],
       "indexes": [
-        "CREATE UNIQUE INDEX idx_pedidos_pref ON pedidos (pref_id)",
         "CREATE INDEX idx_pedidos_email ON pedidos (email_comprador)",
-        "CREATE INDEX idx_pedidos_status ON pedidos (status)"
+        "CREATE INDEX idx_pedidos_status ON pedidos (status)",
+        "CREATE UNIQUE INDEX `idx_pedidos_pref` ON `pedidos` (pref_id) WHERE pref_id != ''"
       ]
     },
     {

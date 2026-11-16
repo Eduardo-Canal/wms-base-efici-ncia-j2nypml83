@@ -126,22 +126,56 @@ export interface AulaConteudo {
   tem_aluno: boolean
 }
 
+export interface ParteConteudo {
+  id: string
+  slug: string
+  titulo: string
+  rotulo: string
+  resumo: string
+  ordem: number
+  publicado: boolean
+}
+
+export interface CertificadoConfig {
+  cert_ativo: boolean
+  cert_titulo: string
+  cert_texto: string
+  cert_carga_horas: number
+  cert_assinante_nome: string
+  cert_assinante_cargo: string
+  cert_cidade: string
+}
+
 export interface ModuloConteudo {
   id: string
   slug: string
   titulo: string
   ordem: number
+  carga_horas?: number
+  cert_conteudo?: string
+  parte?: string
   aulas: AulaConteudo[]
 }
 
-export interface CursoConteudo {
+export interface CursoConteudo extends CertificadoConfig {
   id: string
   slug: string
   titulo: string
   publicado: boolean
   carga_min: number
   produto_slug: string
+  partes: ParteConteudo[]
   modulos: ModuloConteudo[]
+}
+
+export interface ProgressoCurso {
+  curso: { slug: string; titulo: string }
+  total: number
+  concluidas: number
+  percentual: number
+  aulas: { slug: string; concluida: boolean }[]
+  certificado: { codigo: string; emitido_em: string } | null
+  pode_certificar: boolean
 }
 
 export interface ProdutoAdmin {
@@ -447,6 +481,71 @@ export const api = {
     return pedir<{ ok: boolean; mensagem?: string; cursos?: string[]; area?: string }>(
       '/backend/v1/voucher/resgatar',
       { method: 'POST', body: JSON.stringify({ codigo, curso_slug: cursoSlug }) },
+    )
+  },
+
+  // ---- progresso do aluno ----
+  async progressoCurso(cursoSlug: string): Promise<ProgressoCurso> {
+    return pedir(`/backend/v1/curso/${encodeURIComponent(cursoSlug)}/progresso`)
+  },
+
+  async concluirAula(aulaSlug: string): Promise<{ ok: boolean; percentual: number }> {
+    return pedir(`/backend/v1/aula/${encodeURIComponent(aulaSlug)}/concluir`, { method: 'POST' })
+  },
+
+  // ---- certificado ----
+  async emitirCertificado(cursoSlug: string) {
+    return pedir<{
+      ok: boolean
+      ja_emitido?: boolean
+      codigo: string
+      emitido_em: string
+      titulo?: string
+    }>(`/backend/v1/curso/${encodeURIComponent(cursoSlug)}/certificado`, { method: 'POST' })
+  },
+
+  // Público: qualquer pessoa com o código confere (sem login).
+  async verificarCertificado(codigo: string) {
+    return pedir<{
+      valido: boolean
+      codigo: string
+      nome_aluno: string
+      titulo_curso: string
+      carga_horas: number
+      assinante_nome: string
+      assinante_cargo: string
+      emitido_em: string
+    }>(`/backend/v1/certificado/${encodeURIComponent(codigo)}`)
+  },
+
+  // ---- admin: capítulo e certificado ----
+  async adminSalvarParte(dados: {
+    id?: string
+    curso_slug?: string
+    titulo: string
+    rotulo?: string
+    resumo?: string
+    publicado?: boolean
+  }) {
+    return pedir<{ ok: boolean; id: string; rotulo: string; mensagem?: string }>(
+      '/backend/v1/admin/parte',
+      { method: 'POST', body: JSON.stringify(dados) },
+    )
+  },
+
+  async adminSalvarCertificado(dados: {
+    curso_slug: string
+    cert_ativo: boolean
+    cert_titulo?: string
+    cert_texto?: string
+    cert_carga_horas?: number
+    cert_assinante_nome?: string
+    cert_assinante_cargo?: string
+    cert_cidade?: string
+  }) {
+    return pedir<{ ok: boolean; cert_ativo: boolean; mensagem?: string }>(
+      '/backend/v1/admin/curso/certificado',
+      { method: 'POST', body: JSON.stringify(dados) },
     )
   },
 

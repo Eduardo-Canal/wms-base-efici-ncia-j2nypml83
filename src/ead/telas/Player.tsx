@@ -25,9 +25,12 @@ export default function Player() {
   const [params] = useSearchParams()
   const amostra = params.get('amostra') === '1'
   const [estado, setEstado] = useState<Estado>({ t: 'carregando' })
-  const [concluida, setConcluida] = useState(false)
-  const [salvando, setSalvando] = useState(false)
   const expiraRef = useRef<number>(0)
+  // Progresso medido por tempo assistido (decisão do dono, 16/11 17:03 |
+  // opção (a)). Não existe mais botão "marcar como concluída": quem mede é o
+  // player e quem decide é o servidor.
+  const [assistido, setAssistido] = useState({ seg: 0, alvo: 0, concluida: false })
+  const pontosRef = useRef<{ pos: number; dur: number }[]>([])
 
   const carregar = useCallback(async () => {
     setEstado({ t: 'carregando' })
@@ -87,29 +90,75 @@ export default function Player() {
   }
   const [erroMaterial, setErroMaterial] = useState('')
 
-  async function marcarConcluida() {
-    if (estado.t !== 'ok') return
-    if (!getToken()) return setEstado({ t: 'sem_login' })
-    setSalvando(true)
-    try {
-      const me = api.sessaoAtual()
-      const aulaId = estado.dados.aula.id
-      if (!me || !aulaId) return
-      await fetch(
-        `${(import.meta.env.VITE_EAD_API_BASE as string | undefined) ?? ''}/api/collections/progresso_aulas/records`,
-        {
+  // ---- rastreamento do tempo assistido ----
+  // POR QUE ASSIM (e não "marcar como concluída"):
+  // o botão deixava o aluno marcar as 20 aulas em 2 minutos e o certificado
+  // atestava um clique. Agora o player avisa o servidor a cada 20 s de
+  // reprodução e o servidor soma TEMPO REAL (ver progresso-aula.pb.js).
+  // Só a posição do playhead não serve: arrastar a barra para o fim poria a
+  // posição no fim sem ninguém ter assistido.
+  useEffect(() => {
+    if (estado.t !== 'ok' || !getToken()) return
+    const aulaSlug = estado.dados.aula.slug
+    const base = (import.meta.env.VITE_EAD_API_BASE as string | undefined) ?? ''
+
+    const enviar = async (segundos: number, duracao: number) => {
+      try {
+        const r = await fetch(`${base}/backend/v1/aula/${encodeURIComponent(aulaSlug)}/progresso`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: getToken() },
-          body: JSON.stringify({ user: me.user.id, aula: aulaId, concluida: true }),
-        },
-      )
-      setConcluida(true)
-    } catch {
-      // já existe linha (unique user+aula) ou erro de rede: não trava o aluno
-    } finally {
-      setSalvando(false)
+          body: JSON.stringify({ segundos, duracao }),
+        })
+        if (!r.ok) return
+        const d = await r.json()
+        setAssistido({
+          seg: d.assistidos_seg ?? 0,
+          alvo: d.alvo_seg ?? 0,
+          concluida: d.concluida === true,
+        })
+      } catch {
+        /* rede caiu: o próximo report tenta de novo */
+      }
     }
-  }
+
+    // Reporta no máximo a cada 20 s (e no mínimo depois de 10 s de vídeo),
+    // para não inundar o servidor nem ficar 1 min sem gravar.
+    let ultimoEnvio = 0
+    const intervalo = setInterval(() => {
+      const pts = pontosRef.current
+      if (!pts.length) return
+      const agora = Date.now()
+      if (agora - ultimoEnvio < 20000) return
+      ultimoEnvio = agora
+      const ultima = pts[pts.length - 1]
+      void enviar(ultima.pos, ultima.dur)
+    }, 5000)
+
+    // Recebe os eventos do player do Bunny (player.js por postMessage).
+    // O iframe é de outra origem: a única forma é a API postMessage documentada.
+    const receber = (ev: MessageEvent) => {
+      if (ev.origin.indexOf('mediadelivery.net') === -1) return
+      let msg: any = ev.data
+      try {
+        if (typeof msg === 'string') msg = JSON.parse(msg)
+      } catch {
+        return
+      }
+      if (!msg || msg.event !== 'timeupdate') return
+      const seg = Number(msg.value?.seconds ?? msg.seconds ?? 0)
+      const dur = Number(msg.value?.duration ?? msg.duration ?? 0)
+      if (!isFinite(seg) || !isFinite(dur) || dur <= 0) return
+      const pts = pontosRef.current
+      pts.push({ pos: Math.floor(seg), dur: Math.floor(dur) })
+      if (pts.length > 500) pts.shift()
+    }
+
+    window.addEventListener('message', receber)
+    return () => {
+      clearInterval(intervalo)
+      window.removeEventListener('message', receber)
+    }
+  }, [estado])
 
   if (estado.t === 'carregando')
     return <p className="px-4 py-16 text-center text-muted-foreground">Abrindo aula…</p>
@@ -172,9 +221,19 @@ export default function Player() {
           <p className="text-xs text-muted-foreground">{d.aula.numero}</p>
           <h1 className="text-xl font-semibold">{d.aula.titulo}</h1>
         </div>
-        <Button variant="outline" onClick={marcarConcluida} disabled={salvando || concluida}>
-          {concluida ? '✓ Concluída' : salvando ? 'Salvando…' : 'Marcar como concluída'}
-        </Button>
+        {/* A conclusão é automática. O que a tela deve ao aluno é o número
+            honesto de quanto falta — nunca um botão que ele aperta sem ter
+            assistido. */}
+        {assistido.concluida ? (
+          <span className="rounded-md bg-green-50 px-3 py-1.5 text-sm font-medium text-green-800">
+            ✓ Aula concluída
+          </span>
+        ) : assistido.alvo > 0 ? (
+          <span className="text-sm text-muted-foreground">
+            {Math.round((assistido.seg / assistido.alvo) * 100)}% assistido — a aula conclui sozinha
+            ao assistir
+          </span>
+        ) : null}
       </div>
 
       {/* Material só chega quando há matrícula — o endpoint é quem checa. */}

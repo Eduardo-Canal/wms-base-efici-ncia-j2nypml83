@@ -1,7 +1,10 @@
 // progresso-curso.pb.js — o progresso do aluno no CURSO (não na aula).
 //
-//   GET  /backend/v1/curso/{slug}/progresso
-//   POST /backend/v1/aula/{slug}/concluir
+//   GET /backend/v1/curso/{slug}/progresso
+//
+// (O POST /backend/v1/aula/{slug}/concluir mudou de arquivo em 16/11: vive em
+// progresso-aula.pb.js, junto com a medição de tempo assistido. Deixar as duas
+// rotas aqui causaria registro duplicado no PocketBase.)
 //
 // POR QUE ISSO EXISTE (item 1 da ordem aprovada pelo dono em 16/11):
 // já existia `progresso_aulas` gravando aula por aula, mas NADA lia isso de
@@ -13,10 +16,9 @@
 //    segunda verdade que sai de sincronia quando uma aula é publicada ou
 //    despublicada. Só as aulas PUBLICADAS entram na conta — aula em produção
 //    não pode baixar o progresso de quem já pagou.
-// 2. "Concluir" é ação do aluno (botão). Não há verificação de que ele
-//    assistiu. Isso é honesto para curso de livro; está escrito na tela.
-// 3. Concluir exige matrícula. Sem isso qualquer pessoa marcaria aula como
-//    vista e o progresso viraria enfeite.
+// 2. A conclusão da AULA é automática por tempo assistido (decisão do dono,
+//    16/11 17:03): o player reporta e o servidor mede. Ver progresso-aula.pb.js.
+// 3. Progresso exige matrícula — é o mesmo dado que libera o vídeo.
 //
 // Libs INLINE (require local não funciona no JSVM deste projeto).
 
@@ -140,119 +142,6 @@ routerAdd(
       certificado: certificado,
       // Certificado só quando 100% das aulas publicadas.
       pode_certificar: total > 0 && feitas === total && curso.getBool('cert_ativo'),
-    })
-  },
-  $apis.requireAuth(),
-)
-
-// ---------------------------------------------------------------------------
-// POST /backend/v1/aula/{slug}/concluir — marca a aula como vista
-// ---------------------------------------------------------------------------
-routerAdd(
-  'POST',
-  '/backend/v1/aula/{slug}/concluir',
-  (e) => {
-    const texto = (v) => (v === undefined || v === null ? '' : String(v).trim())
-
-    const auth = e.requestInfo().auth
-    if (!auth) return e.json(401, { codigo: 'precisa_login', mensagem: 'Entre para continuar.' })
-
-    const slug = texto(e.request.pathValue('slug'))
-    let aula = null
-    try {
-      aula = $app.findFirstRecordByFilter('aulas', 'slug = {:s}', { s: slug })
-    } catch (_) {}
-    if (!aula) return e.json(404, { codigo: 'aula_inexistente', mensagem: 'Aula não encontrada.' })
-
-    // Precisa de matrícula no curso da aula (a menos que seja amostra).
-    let cursoId = ''
-    try {
-      const mod = $app.findRecordById('modulos', aula.getString('modulo'))
-      cursoId = mod.getString('curso')
-    } catch (_) {}
-    let tem = false
-    if (cursoId) {
-      try {
-        const ms = $app.findRecordsByFilter(
-          'matriculas',
-          "user = {:u} && curso = {:c} && status = 'ativa'",
-          '',
-          1,
-          0,
-          { u: auth.id, c: cursoId },
-        )
-        tem = !!(ms && ms.length)
-      } catch (_) {}
-    }
-    if (!tem)
-      return e.json(403, {
-        codigo: 'sem_matricula',
-        mensagem: 'Você precisa ter o curso para marcar a aula como concluída.',
-      })
-
-    // Idempotente: marcar duas vezes não duplica (índice único user+aula).
-    try {
-      let linha = null
-      try {
-        linha = $app.findFirstRecordByFilter('progresso_aulas', 'user = {:u} && aula = {:a}', {
-          u: auth.id,
-          a: aula.id,
-        })
-      } catch (_) {}
-      if (!linha) {
-        const col = $app.findCollectionByNameOrId('progresso_aulas')
-        linha = new Record(col)
-        linha.set('user', auth.id)
-        linha.set('aula', aula.id)
-      }
-      linha.set('concluida', true)
-      $app.save(linha)
-    } catch (err) {
-      console.log('[ead] concluir falhou: ' + err.message)
-      return e.json(400, {
-        codigo: 'concluir_falhou',
-        mensagem: 'Não foi possível registrar: ' + err.message,
-      })
-    }
-
-    // Devolve o progresso novo para a tela atualizar sem recarregar tudo.
-    let total = 0
-    let feitas = 0
-    try {
-      const mods = $app.findRecordsByFilter('modulos', 'curso = {:c}', 'ordem', 200, 0, {
-        c: cursoId,
-      })
-      const aulasPub = []
-      for (let i = 0; i < mods.length; i++) {
-        const as = $app.findRecordsByFilter(
-          'aulas',
-          'modulo = {:m} && publicado = true',
-          'ordem',
-          500,
-          0,
-          { m: mods[i].id },
-        )
-        for (let k = 0; k < as.length; k++) aulasPub.push(as[k].id)
-      }
-      total = aulasPub.length
-      const prog = $app.findRecordsByFilter(
-        'progresso_aulas',
-        'user = {:u} && concluida = true',
-        '',
-        1000,
-        0,
-        { u: auth.id },
-      )
-      const set = {}
-      for (let i = 0; i < prog.length; i++) set[prog[i].getString('aula')] = true
-      for (let i = 0; i < aulasPub.length; i++) if (set[aulasPub[i]]) feitas++
-    } catch (_) {}
-
-    return e.json(200, {
-      ok: true,
-      total: total,
-      concluidas: feitas,
-      percentual: total > 0 ? Math.round((feitas / total) * 100) : 0,
     })
   },
   $apis.requireAuth(),

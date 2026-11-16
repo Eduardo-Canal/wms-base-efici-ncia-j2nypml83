@@ -125,6 +125,40 @@ export function getToken(): string {
   }
 }
 
+// Papel/email/nome ficam em cache junto com o token, porque o token NÃO os
+// carrega. É conveniência de exibição — o servidor reconfere em cada chamada.
+const CHAVE_PERFIL = 'ead_perfil'
+
+interface PerfilCache {
+  email: string
+  name: string
+  papel: Papel
+}
+
+function lerCache(): PerfilCache | null {
+  try {
+    const bruto = localStorage.getItem(CHAVE_PERFIL)
+    return bruto ? (JSON.parse(bruto) as PerfilCache) : null
+  } catch {
+    return null
+  }
+}
+
+export function guardarPerfil(u: { email?: string; name?: string; papel?: Papel }) {
+  try {
+    localStorage.setItem(
+      CHAVE_PERFIL,
+      JSON.stringify({
+        email: u.email ?? '',
+        name: u.name ?? '',
+        papel: (u.papel as Papel) || 'aluno',
+      }),
+    )
+  } catch {
+    /* sem storage: a sessão vive só nesta aba, sem papel lembrado */
+  }
+}
+
 export function setToken(t: string) {
   try {
     if (t) localStorage.setItem(CHAVE_TOKEN, t)
@@ -171,6 +205,20 @@ async function pedir<T>(caminho: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
+  // ---- quem sou eu, segundo o SERVIDOR ----
+  // POR QUE ISSO EXISTE (defeito real, 16/11 21:20):
+  // o token do PocketBase carrega só {collectionId, exp, id, refreshable, type}
+  // — NÃO carrega `papel`, `email` nem `name`. A versão anterior do painel
+  // deduzia o papel de dentro do token, então `papel` saía sempre vazio,
+  // caía no padrão 'aluno' e o link "Painel" nunca aparecia — nem para o dono,
+  // que era admin no banco.
+  // Aqui o papel vem do registro no servidor, que é a única fonte de verdade.
+  // A tela pode usar isso para MOSTRAR; quem BARRA continua sendo o hook.
+  async meuPerfil(): Promise<{ id: string; email: string; name: string; papel: Papel }> {
+    const r = await pedir<any>('/api/collections/users/auth-refresh', { method: 'POST' })
+    return normalizarUser(r.record)
+  },
+
   // ---- redefinir senha (link do e-mail) ----
   // O token vem na URL do e-mail ({RESET_URL}) e é de uso único.
   async confirmarNovaSenha(token: string, senha: string, confirmacao: string): Promise<void> {
@@ -187,6 +235,10 @@ export const api = {
       { method: 'POST', body: JSON.stringify({ identity: email, password: senha }) },
     )
     const s: Sessao = { token: r.token, user: normalizarUser(r.record) }
+    // Guarda o perfil ANTES de avisar as telas: o login já traz o registro
+    // completo (com `papel`), então a tela acerta de primeira, sem esperar
+    // uma segunda chamada.
+    guardarPerfil(s.user)
     setToken(r.token)
     return s
   },
@@ -207,6 +259,9 @@ export const api = {
     })
   },
 
+  // Sessão montada a partir do token + papel que o SERVIDOR confirmou.
+  // O token sozinho não basta: ele não tem `papel`. Sem o `papelDeCache`, a
+  // tela saberia que há alguém logado, mas nunca que é administrador.
   sessaoAtual(): Sessao | null {
     const token = getToken()
     if (!token) return null
@@ -216,9 +271,9 @@ export const api = {
         token,
         user: {
           id: payload.id,
-          email: payload.email ?? '',
-          name: payload.name ?? '',
-          papel: payload.papel || 'aluno',
+          email: lerCache()?.email ?? '',
+          name: lerCache()?.name ?? '',
+          papel: lerCache()?.papel ?? 'aluno',
         },
       }
     } catch {
@@ -228,6 +283,11 @@ export const api = {
 
   sair() {
     setToken('')
+    try {
+      localStorage.removeItem(CHAVE_PERFIL)
+    } catch {
+      /* nada a limpar */
+    }
   },
 
   // ---- catálogo ----

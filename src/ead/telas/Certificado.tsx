@@ -25,6 +25,39 @@ type Dados = {
   emitido_em: string
 }
 
+// A rubrica vive no backend (outro host). <img src="https://outro-host/...">
+// depende de CORS e de a CSP do arquivo permitir — e num teste de 16/11 a
+// imagem não renderizou, apesar de o arquivo responder 200 image/png.
+// Aqui baixamos o arquivo e usamos um blob: URL, que é da própria origem da
+// página e não depende de política nenhuma. Se falhar, o nome digitado do
+// assinante continua aparecendo — o certificado nunca fica quebrado.
+function useRubrica(url?: string): string {
+  const [src, setSrc] = useState('')
+  useEffect(() => {
+    if (!url) return
+    let vivo = true
+    fetch(url)
+      .then((r) => (r.ok ? r.blob() : Promise.reject(new Error('sem arquivo'))))
+      .then((b) => {
+        if (vivo) setSrc(URL.createObjectURL(b))
+      })
+      .catch(() => {
+        /* sem rubrica: o nome assinado já basta */
+      })
+    return () => {
+      vivo = false
+    }
+  }, [url])
+  return src
+}
+
+// Renderiza a rubrica já baixada como blob (ver useRubrica acima).
+function Rubrica({ url, nome }: { url?: string; nome: string }) {
+  const src = useRubrica(url)
+  if (!src) return null
+  return <img src={src} alt={`Assinatura de ${nome}`} className="mb-1 h-14 object-contain" />
+}
+
 export default function Certificado() {
   const { codigo = '' } = useParams<{ codigo: string }>()
   const [dados, setDados] = useState<Dados | null>(null)
@@ -98,13 +131,7 @@ export default function Certificado() {
                   {/* A rubrica vem do curso e é vinculada na emissão. Sem ela,
                       o nome digitado continua valendo — o certificado não fica
                       quebrado quando não há imagem. */}
-                  {dados.assinatura_url && (
-                    <img
-                      src={dados.assinatura_url}
-                      alt={`Assinatura de ${dados.assinante_nome}`}
-                      className="mb-1 h-14 object-contain"
-                    />
-                  )}
+                  <Rubrica url={dados.assinatura_url} nome={dados.assinante_nome} />
                   {dados.assinante_nome}
                   {dados.assinante_cargo ? ` — ${dados.assinante_cargo}` : ''}
                 </dd>

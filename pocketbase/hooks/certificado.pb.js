@@ -112,6 +112,16 @@ routerAdd(
         mensagem: 'O certificado deste curso ainda não está liberado.',
       })
 
+    // URL pública da rubrica (a imagem vive no curso). Helper inline porque
+    // função declarada no topo do arquivo não é visível no callback.
+    function rubricaUrl(cursoRec) {
+      var arq = String(cursoRec.getString('cert_assinatura') || '').trim()
+      if (!arq) return ''
+      return (
+        '/api/files/' + cursoRec.collection().id + '/' + cursoRec.id + '/' + encodeURIComponent(arq)
+      )
+    }
+
     // ---- 4. código de verificação ----
     // Formato legível em voz alta e por telefone: WMS-XXXX-XXXX (sem O/0 e I/1).
     function gerarCodigo() {
@@ -151,6 +161,9 @@ routerAdd(
       c.set('carga_horas', curso.getInt('cert_carga_horas'))
       c.set('assinante_nome', curso.getString('cert_assinante_nome'))
       c.set('assinante_cargo', curso.getString('cert_assinante_cargo'))
+      // Rubrica: guarda o NOME do arquivo para o certificado saber qual
+      // imagem usar. A imagem continua no curso (não duplicamos binário).
+      c.set('assinatura_arquivo', curso.getString('cert_assinatura'))
       const agora = new Date().toISOString()
       c.set('emitido_em', agora)
       $app.save(c)
@@ -163,6 +176,7 @@ routerAdd(
         carga_horas: curso.getInt('cert_carga_horas'),
         assinante_nome: curso.getString('cert_assinante_nome'),
         assinante_cargo: curso.getString('cert_assinante_cargo'),
+        assinatura_url: rubricaUrl(curso),
         verificar_em: '/certificado/' + codigo,
       })
     } catch (err) {
@@ -194,6 +208,17 @@ routerAdd('GET', '/backend/v1/certificado/{codigo}', (e) => {
   // e não ajuda a descobrir códigos válidos por tentativa.
   if (!c) return e.json(404, { valido: false, mensagem: 'Certificado não encontrado.' })
 
+  // Rubrica: o certificado guarda o NOME do arquivo; a imagem está no curso.
+  let assinaturaUrl = ''
+  try {
+    const arq = String(c.getString('assinatura_arquivo') || '').trim()
+    if (arq) {
+      const curso = $app.findRecordById('cursos', c.getString('curso'))
+      assinaturaUrl =
+        '/api/files/' + curso.collection().id + '/' + curso.id + '/' + encodeURIComponent(arq)
+    }
+  } catch (_) {}
+
   // Devolve só o necessário para conferência. Nada de e-mail, id de usuário
   // ou qualquer dado que permita contato — quem tem o código já sabe o nome.
   return e.json(200, {
@@ -204,6 +229,7 @@ routerAdd('GET', '/backend/v1/certificado/{codigo}', (e) => {
     carga_horas: c.getInt('carga_horas'),
     assinante_nome: c.getString('assinante_nome'),
     assinante_cargo: c.getString('assinante_cargo'),
+    assinatura_url: assinaturaUrl,
     emitido_em: c.getString('emitido_em'),
   })
 })

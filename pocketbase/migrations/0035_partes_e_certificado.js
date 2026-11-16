@@ -155,6 +155,10 @@ migrate(
           { name: 'carga_horas', type: 'number', required: false, min: 0 },
           { name: 'assinante_nome', type: 'text', required: false, max: 160 },
           { name: 'assinante_cargo', type: 'text', required: false, max: 160 },
+          // Cópia do NOME do arquivo da rubrica no momento da emissão. A
+          // imagem em si vive no curso; aqui só o ponteiro, porque certificado
+          // não deve duplicar binário.
+          { name: 'assinatura_arquivo', type: 'text', required: false, max: 200 },
           { name: 'emitido_em', type: 'date', required: false },
           { name: 'created', type: 'autodate', onCreate: true, onUpdate: false },
           { name: 'updated', type: 'autodate', onCreate: true, onUpdate: true },

@@ -58,14 +58,7 @@ routerAdd(
         }
         let urlRubrica = ''
         try {
-          if (texto(ja.getString('assinatura_arquivo')))
-            urlRubrica =
-              '/api/files/' +
-              curso.collection().id +
-              '/' +
-              curso.id +
-              '/' +
-              encodeURIComponent(ja.getString('assinatura_arquivo'))
+          if (texto(ja.getString('assinatura_arquivo'))) urlRubrica = rubricaUrl(curso)
         } catch (_) {}
         return e.json(200, {
           ok: true,
@@ -136,13 +129,29 @@ routerAdd(
         mensagem: 'O certificado deste curso ainda não está liberado.',
       })
 
-    // URL pública da rubrica (a imagem vive no curso). Helper inline porque
-    // função declarada no topo do arquivo não é visível no callback.
+    // URL pública da rubrica (a imagem vive no curso).
+    //
+    // TEM QUE SER ABSOLUTA, apontando para o BACKEND. Medido em 16/11: o
+    // domínio do site NÃO roteia /api/files (devolve 404 em HTML), porque
+    // /api/* só existe no host do PocketBase. Com caminho relativo a imagem
+    // aparecia quebrada na tela de verificação (naturalWidth 0).
+    // O segredo BACKEND_PUBLICO permite trocar o host sem mexer no código.
     function rubricaUrl(cursoRec) {
       var arq = String(cursoRec.getString('cert_assinatura') || '').trim()
       if (!arq) return ''
+      var host = ''
+      try {
+        host = String($secrets.get('EAD_API_PUBLICA', '') || '')
+      } catch (_) {}
+      if (!host) host = 'https://wms-base-eficiencia-c56b6.shrd01.internal.goskip.dev'
       return (
-        '/api/files/' + cursoRec.collection().id + '/' + cursoRec.id + '/' + encodeURIComponent(arq)
+        host +
+        '/api/files/' +
+        cursoRec.collection().id +
+        '/' +
+        cursoRec.id +
+        '/' +
+        encodeURIComponent(arq)
       )
     }
 
@@ -233,13 +242,26 @@ routerAdd('GET', '/backend/v1/certificado/{codigo}', (e) => {
   if (!c) return e.json(404, { valido: false, mensagem: 'Certificado não encontrado.' })
 
   // Rubrica: o certificado guarda o NOME do arquivo; a imagem está no curso.
+  // URL ABSOLUTA do BACKEND: /api/files não é roteado pelo domínio do site
+  // (medido em 16/11 — devolve 404 em HTML e a imagem aparece quebrada).
   let assinaturaUrl = ''
   try {
     const arq = String(c.getString('assinatura_arquivo') || '').trim()
     if (arq) {
       const curso = $app.findRecordById('cursos', c.getString('curso'))
+      let host = ''
+      try {
+        host = String($secrets.get('EAD_API_PUBLICA', '') || '')
+      } catch (_) {}
+      if (!host) host = 'https://wms-base-eficiencia-c56b6.shrd01.internal.goskip.dev'
       assinaturaUrl =
-        '/api/files/' + curso.collection().id + '/' + curso.id + '/' + encodeURIComponent(arq)
+        host +
+        '/api/files/' +
+        curso.collection().id +
+        '/' +
+        curso.id +
+        '/' +
+        encodeURIComponent(arq)
     }
   } catch (_) {}
 

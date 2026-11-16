@@ -18,6 +18,7 @@ import Obrigado from './ead/telas/Obrigado'
 import MinhaArea from './ead/telas/MinhaArea'
 import Admin from './ead/telas/Admin'
 import ResetSenha from './ead/telas/ResetSenha'
+import Voucher from './ead/telas/Voucher'
 import { useSessao } from './ead/useSessao'
 
 const EadRoutes = () => {
@@ -33,6 +34,7 @@ const EadRoutes = () => {
           e precisa funcionar mesmo com a área de cursos fechada */}
       <Route path="/reset-password" element={<ResetSenha />} />
       <Route path="/ead/minha-area" element={<MinhaArea logado={logado} />} />
+      <Route path="/ead/voucher" element={<Voucher />} />
       {/* só admin: a tela esconde, mas quem barra é o servidor */}
       <Route path="/ead/admin" element={<Admin />} />
       <Route path="/ead/comprar" element={<Comprar />} />

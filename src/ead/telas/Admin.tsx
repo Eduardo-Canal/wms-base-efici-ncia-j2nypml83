@@ -17,7 +17,14 @@
 //
 // NADA DE SEGREDO AQUI: este arquivo vai para o navegador.
 import { useEffect, useState } from 'react'
-import { api, type AlunoMatricula, type Config, type ProdutoAdmin } from '../api'
+import {
+  api,
+  precoBR,
+  type AlunoMatricula,
+  type Config,
+  type ProdutoAdmin,
+  type Voucher,
+} from '../api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -171,7 +178,259 @@ export default function Admin() {
 
       <Produtos />
 
+      <Vouchers />
+
       <Alunos />
+    </div>
+  )
+}
+
+// VOUCHERS — acesso de cortesia, promoção e campanha.
+//
+// O dono pediu isto (16/11): liberar acesso para funcionários da Zion e para
+// prospecção, e gerar cupom promocional. Aqui ele cria o código e vê o uso.
+//
+// A tela NUNCA decide validade: mostra o que o servidor devolveu. O código é
+// gerado pelo servidor (aleatório, sem O/0 e I/1 para não confundir na hora de
+// digitar).
+function Vouchers() {
+  const [lista, setLista] = useState<Voucher[]>([])
+  const [carregando, setCarregando] = useState(true)
+  const [msg, setMsg] = useState('')
+  const [erro, setErro] = useState('')
+
+  // formulário
+  const [tipo, setTipo] = useState('acesso')
+  const [descricao, setDescricao] = useState('')
+  const [emailDestino, setEmailDestino] = useState('')
+  const [percentual, setPercentual] = useState('')
+  const [valorReais, setValorReais] = useState('')
+  const [limite, setLimite] = useState('')
+  const [validade, setValidade] = useState('')
+  const [criando, setCriando] = useState(false)
+
+  const CURSO_SLUG = 'fund-wms-fundamentos'
+
+  function carregar() {
+    setCarregando(true)
+    api
+      .adminVouchers()
+      .then((r) => setLista(r.vouchers))
+      .catch((e) => setErro(mensagemDe(e)))
+      .finally(() => setCarregando(false))
+  }
+  useEffect(carregar, [])
+
+  async function criar() {
+    setErro('')
+    setMsg('')
+    setCriando(true)
+    try {
+      const r = await api.adminCriarVoucher({
+        tipo,
+        // Voucher de acesso e de campanha vale para o curso atual. Cupom de
+        // desconto não precisa de curso: vale na compra.
+        cursos: tipo === 'percentual' || tipo === 'valor' ? [] : [CURSO_SLUG],
+        percentual: tipo === 'percentual' ? Number(percentual) : undefined,
+        valor_reais: tipo === 'valor' ? valorReais : undefined,
+        limite_usos: limite ? Number(limite) : 0,
+        validade: validade || undefined,
+        email_destino: emailDestino || undefined,
+        descricao,
+      })
+      setMsg('Código criado: ' + r.codigo + ' — copie e envie para a pessoa.')
+      setDescricao('')
+      setEmailDestino('')
+      setPercentual('')
+      setValorReais('')
+      setLimite('')
+      setValidade('')
+      carregar()
+    } catch (e) {
+      setErro(mensagemDe(e))
+    } finally {
+      setCriando(false)
+    }
+  }
+
+  async function alternar(v: Voucher) {
+    setErro('')
+    setMsg('')
+    try {
+      const r = await api.adminVoucherStatus({ id: v.id, ativo: !v.ativo })
+      setMsg(r.mensagem ?? 'Atualizado.')
+      carregar()
+    } catch (e) {
+      setErro(mensagemDe(e))
+    }
+  }
+
+  const rotuloTipo = (t: string) =>
+    t === 'acesso'
+      ? 'acesso (cortesia)'
+      : t === 'livre'
+        ? 'acesso livre'
+        : t === 'percentual'
+          ? `desconto ${lista.find((x) => x.tipo === 'percentual') ? '' : ''}%`
+          : 'desconto em R$'
+
+  return (
+    <div className="mt-10">
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Códigos de acesso e desconto</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Use <strong>acesso</strong> para liberar um curso de graça (funcionário, prospecção) e{' '}
+            <strong>desconto</strong> para uma promoção. O código é gerado pelo sistema.
+          </p>
+
+          {msg && (
+            <p className="mt-3 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+              {msg}
+            </p>
+          )}
+          {erro && (
+            <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{erro}</p>
+          )}
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label className="text-xs">Tipo</Label>
+              <select
+                className="mt-1 w-full rounded border px-3 py-2 text-sm"
+                value={tipo}
+                onChange={(e) => setTipo(e.target.value)}
+              >
+                <option value="acesso">Acesso ao curso (cortesia, 1 pessoa)</option>
+                <option value="livre">Acesso livre (campanha, N usos)</option>
+                <option value="percentual">Desconto percentual</option>
+                <option value="valor">Desconto em reais</option>
+              </select>
+            </div>
+            <div>
+              <Label className="text-xs">Para quem (e-mail — opcional)</Label>
+              <Input
+                className="mt-1"
+                value={emailDestino}
+                onChange={(e) => setEmailDestino(e.target.value)}
+                placeholder="funcionario@zionlogtec.com.br"
+              />
+            </div>
+
+            {tipo === 'percentual' && (
+              <div>
+                <Label className="text-xs">Desconto (%)</Label>
+                <Input
+                  className="mt-1"
+                  value={percentual}
+                  onChange={(e) => setPercentual(e.target.value)}
+                  placeholder="30"
+                  inputMode="numeric"
+                />
+              </div>
+            )}
+            {tipo === 'valor' && (
+              <div>
+                <Label className="text-xs">Desconto (R$)</Label>
+                <Input
+                  className="mt-1"
+                  value={valorReais}
+                  onChange={(e) => setValorReais(e.target.value)}
+                  placeholder="50,00"
+                  inputMode="decimal"
+                />
+              </div>
+            )}
+
+            {tipo === 'livre' && (
+              <div>
+                <Label className="text-xs">Limite de usos (vazio = ilimitado)</Label>
+                <Input
+                  className="mt-1"
+                  value={limite}
+                  onChange={(e) => setLimite(e.target.value)}
+                  placeholder="20"
+                  inputMode="numeric"
+                />
+              </div>
+            )}
+
+            <div>
+              <Label className="text-xs">Válido até (opcional)</Label>
+              <Input
+                className="mt-1"
+                type="date"
+                value={validade}
+                onChange={(e) => setValidade(e.target.value)}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <Label className="text-xs">Para que serve (anotação interna)</Label>
+              <Input
+                className="mt-1"
+                value={descricao}
+                onChange={(e) => setDescricao(e.target.value)}
+                placeholder="Ex.: funcionários Zion, novembro/2026"
+              />
+            </div>
+          </div>
+
+          <Button className="mt-4" disabled={criando} onClick={criar}>
+            {criando ? 'Criando…' : 'Gerar código'}
+          </Button>
+
+          {carregando ? (
+            <p className="py-4 text-sm text-muted-foreground">Carregando…</p>
+          ) : lista.length === 0 ? (
+            <p className="py-4 text-sm text-muted-foreground">Nenhum código criado ainda.</p>
+          ) : (
+            <Table className="mt-6">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Código</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Destino</TableHead>
+                  <TableHead>Usos</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {lista.map((v) => (
+                  <TableRow key={v.id}>
+                    <TableCell className="font-mono font-medium">{v.codigo}</TableCell>
+                    <TableCell className="text-xs">
+                      {v.tipo === 'percentual'
+                        ? `${v.percentual}% off`
+                        : v.tipo === 'valor'
+                          ? `${precoBR(v.valor_centavos)} off`
+                          : rotuloTipo(v.tipo)}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {v.email_destino || (v.cursos_titulos?.[0] ?? 'todos os cursos')}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {v.usos}/{v.limite_usos > 0 ? v.limite_usos : '∞'}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={v.ativo ? 'default' : 'secondary'}>
+                        {v.ativo ? 'ativo' : 'inativo'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm" onClick={() => alternar(v)}>
+                        {v.ativo ? 'Desativar' : 'Reativar'}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

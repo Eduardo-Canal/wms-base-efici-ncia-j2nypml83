@@ -93,6 +93,21 @@ export interface AlunoMatricula {
   criado_em: string
 }
 
+export interface Voucher {
+  id: string
+  codigo: string
+  tipo: 'percentual' | 'valor' | 'acesso' | 'livre'
+  percentual: number
+  valor_centavos: number
+  limite_usos: number
+  usos: number
+  validade: string
+  email_destino: string
+  descricao: string
+  ativo: boolean
+  cursos_titulos: string[]
+}
+
 export interface ProdutoAdmin {
   id: string
   slug: string
@@ -380,6 +395,43 @@ export const api = {
   }) {
     return pedir<{ ok: boolean; mensagem?: string; preco_centavos: number; ativo: boolean }>(
       '/backend/v1/admin/produto',
+      { method: 'POST', body: JSON.stringify(dados) },
+    )
+  },
+
+  // ---- vouchers (aluno) ----
+  async resgatarVoucher(codigo: string, cursoSlug?: string) {
+    return pedir<{ ok: boolean; mensagem?: string; cursos?: string[]; area?: string }>(
+      '/backend/v1/voucher/resgatar',
+      { method: 'POST', body: JSON.stringify({ codigo, curso_slug: cursoSlug }) },
+    )
+  },
+
+  // ---- vouchers (admin) ----
+  async adminVouchers(): Promise<{ total: number; vouchers: Voucher[] }> {
+    return pedir('/backend/v1/admin/vouchers')
+  },
+
+  async adminCriarVoucher(dados: {
+    tipo: string
+    codigo?: string
+    cursos?: string[]
+    percentual?: number
+    valor_reais?: string
+    limite_usos?: number
+    validade?: string
+    email_destino?: string
+    descricao?: string
+  }) {
+    return pedir<{ ok: boolean; codigo: string; mensagem?: string }>('/backend/v1/admin/voucher', {
+      method: 'POST',
+      body: JSON.stringify(dados),
+    })
+  },
+
+  async adminVoucherStatus(dados: { id: string; ativo: boolean }) {
+    return pedir<{ ok: boolean; ativo: boolean; mensagem?: string }>(
+      '/backend/v1/admin/voucher/status',
       { method: 'POST', body: JSON.stringify(dados) },
     )
   },

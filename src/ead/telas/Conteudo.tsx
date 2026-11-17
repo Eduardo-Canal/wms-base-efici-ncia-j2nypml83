@@ -79,6 +79,8 @@ export default function Conteudo() {
             <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{erro}</p>
           )}
 
+          <NovoCurso aoCriar={carregar} aviso={aviso} setErro={setErro} />
+
           {cursos.length === 0 ? (
             <p className="py-6 text-sm text-muted-foreground">Nenhum curso encontrado.</p>
           ) : (
@@ -104,6 +106,36 @@ export default function Conteudo() {
 
                 {cursoAberto === c.slug && (
                   <div className="border-t px-4 py-4">
+                    {/* Publicar é ação separada de criar: o dono monta, confere
+                        e só então coloca no ar. O servidor recusa publicar
+                        curso sem nenhuma aula publicada. */}
+                    <div className="mb-4 flex flex-wrap items-center gap-3 rounded-md bg-muted/40 px-3 py-2">
+                      <span className="text-sm">
+                        {c.publicado
+                          ? 'Este curso está no ar para os alunos.'
+                          : 'Rascunho: ainda não aparece no catálogo.'}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant={c.publicado ? 'outline' : 'default'}
+                        onClick={async () => {
+                          try {
+                            await api.adminSalvarCurso({
+                              id: c.id,
+                              titulo: c.titulo,
+                              publicado: !c.publicado,
+                            })
+                            aviso(c.publicado ? 'Curso despublicado.' : 'Curso publicado.')
+                            carregar()
+                          } catch (e) {
+                            setErro(mensagemDe(e))
+                          }
+                        }}
+                      >
+                        {c.publicado ? 'Tirar do ar' : 'Publicar curso'}
+                      </Button>
+                    </div>
+
                     <NovoModulo cursoSlug={c.slug} aoSalvar={carregar} aviso={aviso} />
 
                     {c.modulos.length === 0 && (
@@ -129,6 +161,185 @@ export default function Conteudo() {
           )}
         </CardContent>
       </Card>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// NovoCurso — cria um curso pelo painel.
+//
+// POR QUE ASSIM: criar curso era migration, então cada curso novo prendia o
+// dono a mim. O livro 1 tem 3 cursos e ainda vem o livro 2 — o formulário é o
+// mesmo caminho que o curso 1 usou, só que agora sem código.
+//
+// O SLUG NÃO É DIGITADO. É derivado do título no servidor ("Diagnóstico da
+// Operação" → diag-diagnostico-da-operacao). Slug à mão colide e, pior, vira
+// URL de venda que não dá para mudar depois sem quebrar link já divulgado.
+// O campo "prefixo" existe porque o slug da AULA é único no banco inteiro:
+// é ele que faz as aulas nascerem diag-a01 em vez de colidir com fund-a01.
+// ---------------------------------------------------------------------------
+function NovoCurso({
+  aoCriar,
+  aviso,
+  setErro,
+}: {
+  aoCriar: () => void
+  aviso: (t: string) => void
+  setErro: (t: string) => void
+}) {
+  const [aberto, setAberto] = useState(false)
+  const [titulo, setTitulo] = useState('')
+  const [prefixo, setPrefixo] = useState('')
+  const [resumo, setResumo] = useState('')
+  const [carga, setCarga] = useState('')
+  const [certCarga, setCertCarga] = useState('')
+  const [preco, setPreco] = useState('')
+  const [criarProduto, setCriarProduto] = useState(true)
+  const [salvando, setSalvando] = useState(false)
+
+  async function salvar() {
+    if (!titulo.trim()) return setErro('Dê um nome ao curso.')
+    setSalvando(true)
+    setErro('')
+    try {
+      const r = await api.adminSalvarCurso({
+        titulo: titulo.trim(),
+        prefixo: prefixo.trim() || undefined,
+        resumo_1linha: resumo.trim() || undefined,
+        carga_min: Number(carga) || 0,
+        cert_carga_horas: Number(certCarga) || 0,
+        criar_produto: criarProduto,
+        preco_reais: preco.trim() || undefined,
+      })
+      aviso(r.mensagem ?? 'Curso criado.')
+      setTitulo('')
+      setPrefixo('')
+      setResumo('')
+      setCarga('')
+      setCertCarga('')
+      setPreco('')
+      setAberto(false)
+      aoCriar()
+    } catch (e) {
+      setErro(mensagemDe(e))
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  if (!aberto) {
+    return (
+      <div className="mt-4">
+        <Button variant="outline" onClick={() => setAberto(true)}>
+          + Criar novo curso
+        </Button>
+        <p className="mt-1 text-xs text-muted-foreground">
+          O curso nasce rascunho. Depois de criar, monte os módulos e as aulas abaixo.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-4 rounded-lg border border-dashed p-4">
+      <p className="font-medium">Novo curso</p>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <Label htmlFor="nc-titulo">Nome do curso</Label>
+          <Input
+            id="nc-titulo"
+            value={titulo}
+            onChange={(e) => setTitulo(e.target.value)}
+            placeholder="Diagnóstico da Operação"
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            O endereço do curso é gerado a partir deste nome e não muda depois.
+          </p>
+        </div>
+
+        <div>
+          <Label htmlFor="nc-prefixo">Prefixo das aulas</Label>
+          <Input
+            id="nc-prefixo"
+            value={prefixo}
+            onChange={(e) => setPrefixo(e.target.value.toLowerCase())}
+            placeholder="diag"
+            maxLength={6}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            2 a 6 letras (ex.: diag). Define o código das aulas — diag-a01, diag-a02.
+          </p>
+        </div>
+
+        <div>
+          <Label htmlFor="nc-carga">Carga horária (h)</Label>
+          <Input
+            id="nc-carga"
+            value={carga}
+            onChange={(e) => setCarga(e.target.value)}
+            placeholder="18"
+            inputMode="numeric"
+          />
+        </div>
+
+        <div className="sm:col-span-2">
+          <Label htmlFor="nc-resumo">Resumo em uma linha</Label>
+          <Input
+            id="nc-resumo"
+            value={resumo}
+            onChange={(e) => setResumo(e.target.value)}
+            placeholder="Como diagnosticar o que a operação está perdendo hoje."
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="nc-cert">Carga no certificado (h)</Label>
+          <Input
+            id="nc-cert"
+            value={certCarga}
+            onChange={(e) => setCertCarga(e.target.value)}
+            placeholder="18"
+            inputMode="numeric"
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Pode ser igual à carga do curso. Sem isso o certificado não ativa.
+          </p>
+        </div>
+
+        <div>
+          <Label htmlFor="nc-preco">Preço (R$)</Label>
+          <Input
+            id="nc-preco"
+            value={preco}
+            onChange={(e) => setPreco(e.target.value)}
+            placeholder="197,00"
+            inputMode="decimal"
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Deixe vazio para definir depois. Sem preço o produto fica inativo.
+          </p>
+        </div>
+      </div>
+
+      <label className="mt-3 flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={criarProduto}
+          onChange={(e) => setCriarProduto(e.target.checked)}
+          className="h-4 w-4"
+        />
+        Criar também o produto de venda deste curso
+      </label>
+
+      <div className="mt-4 flex gap-2">
+        <Button onClick={salvar} disabled={salvando}>
+          {salvando ? 'Criando…' : 'Criar curso'}
+        </Button>
+        <Button variant="ghost" onClick={() => setAberto(false)} disabled={salvando}>
+          Cancelar
+        </Button>
+      </div>
     </div>
   )
 }

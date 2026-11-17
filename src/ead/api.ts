@@ -554,6 +554,33 @@ export const api = {
     return pedir('/backend/v1/admin/conteudo')
   },
 
+  // ---- criar / editar CURSO (pedido do dono, 17/11) ----
+  // Slug do curso é gerado no servidor a partir do título: slug digitado à mão
+  // colide e vira URL de venda que não pode mais mudar.
+  async adminSalvarCurso(dados: {
+    id?: string
+    titulo: string
+    prefixo?: string
+    resumo_1linha?: string
+    descricao?: string
+    resultado_esperado?: string
+    carga_min?: number
+    cert_carga_horas?: number
+    criar_produto?: boolean
+    preco_reais?: string
+    publicado?: boolean
+  }) {
+    return pedir<{
+      ok: boolean
+      id: string
+      slug: string
+      titulo: string
+      publicado: boolean
+      produto?: { slug: string; ativo: boolean; preco_centavos: number } | null
+      mensagem?: string
+    }>('/backend/v1/admin/curso', { method: 'POST', body: JSON.stringify(dados) })
+  },
+
   async adminSalvarModulo(dados: {
     id?: string
     curso_slug?: string

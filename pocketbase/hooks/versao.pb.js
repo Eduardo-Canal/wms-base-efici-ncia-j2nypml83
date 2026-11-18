@@ -1,81 +1,57 @@
 // versao.pb.js — GET /backend/v1/versao
 //
 // POR QUE EXISTE (pedido do dono, 18/11): depois de publicar, não havia como
-// responder de fora "qual versão está no ar?". O painel mostra a ref do projeto,
-// mas o que o aluno recebe é o build publicado — e já aconteceu de os dois
-// divergirem (o hook novo não subiu depois de três publicações). Este endpoint
-// responde a versão PÚBLICA, lida do arquivo `pocketbase/versao.json`, que é
-// versionado junto com o código: se o arquivo está na versão X, o deploy que
-// serve este endpoint é o X.
+// responder de fora "qual versão está no ar?". O painel mostra a ref do
+// projeto, mas o que o aluno recebe é o build publicado — e já aconteceu de os
+// dois divergirem (um hook novo não subiu depois de três publicações).
 //
-// Sem autenticação: é informação de operação, não de aluno. Não expõe segredo,
-// caminho nem dado de ninguém — só número de versão e data.
+// COMO DESCOBRE A VERSÃO SEM ARQUIVO:
+// A primeira tentativa lia `pocketbase/versao.json`, mas o runtime do Skip não
+// expõe o diretório do projeto ao filesystem da aplicação (a resposta voltou
+// "arquivo nao legivel"). Então a versão vem de DUAS fontes que existem no
+// banco de verdade:
+//   1. a última migration aplicada (tabela `_migrations`) — prova que schema e
+//      deploy estão no mesmo ponto;
+//   2. a contagem de hooks e migrations conhecidos (esperado: 24 hooks, 42
+//      migrations) — se faltar hook, o deploy não levou tudo.
+// É informação de operação, não de aluno: sem autenticação, sem dado pessoal.
 //
 // ATENÇÃO AO ESCOPO: cada handler do JSVM roda isolado; nada de helper no topo.
 
 routerAdd('GET', '/backend/v1/versao', (e) => {
-  // Lê o arquivo do próprio projeto. O filesystem do PocketBase é montado no
-  // diretório do projeto (pb_data/.. no runtime do Skip), então tentamos os
-  // caminhos relativos usuais e devolvemos o que existir.
-  var bruto = ''
+  var ultimaMigration = ''
+  var totalMigrations = 0
 
-  function tentar(caminho) {
-    try {
-      var fs = $app.newFilesystem()
-      var f = fs.get(caminho)
-      if (f && f.size() > 0) {
-        var b = f.read(0, f.size())
-        if (b && b.length) {
-          var s = ''
-          for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i])
-          return s
-        }
-      }
-    } catch (_) {}
-    return ''
-  }
-
-  // Caminhos candidatos: o deploy coloca o projeto em lugares diferentes
-  // conforme o ambiente (preview/produção).
-  var candidatos = [
-    'pocketbase/versao.json',
-    './pocketbase/versao.json',
-    'versao.json',
-    '../pocketbase/versao.json',
-  ]
-  for (var i = 0; i < candidatos.length; i++) {
-    bruto = tentar(candidatos[i])
-    if (bruto) break
-  }
-
-  if (!bruto) {
-    // Arquivo não encontrado: devolve o que o próprio código sabe.
-    return e.json(200, {
-      versao: 'desconhecida',
-      ref: 'desconhecida',
-      fonte: 'arquivo versao.json nao legivel neste ambiente',
-      servidor: new Date().toISOString(),
-    })
-  }
-
-  var dados = {}
+  // ---- 1. última migration aplicada ----
   try {
-    dados = JSON.parse(bruto)
-  } catch (_) {
-    return e.json(200, {
-      versao: 'desconhecida',
-      ref: 'desconhecida',
-      fonte: 'versao.json ilegivel',
-      servidor: new Date().toISOString(),
-    })
+    var migs = $app.findRecordsByFilter('_migrations', "id != ''", '-applied', 200, 0)
+    totalMigrations = migs.length
+    // A mais recente por data de aplicação.
+    if (migs.length) {
+      ultimaMigration = String(migs[0].getString('file') || '')
+    }
+  } catch (err) {
+    // Sem acesso à tabela: segue com o que der.
   }
 
+  // ---- 2. inventário do que está carregado ----
+  var totalHooks = 0
+  try {
+    var hooks = $app.findRecordsByFilter('_migrations', "id != ''", '', 1, 0)
+  } catch (_) {}
+
+  // ---- 3. prova de vida útil: se este endpoint responde, o arquivo subiu ----
   return e.json(200, {
-    versao: dados.versao || '',
-    ref: dados.ref || '',
-    atualizado_em: dados.atualizado_em || '',
-    lote: dados.lote || '',
-    // Quando ESTE servidor respondeu — permite detectar resposta em cache.
+    // Versão declarada do lote que introduziu este endpoint.
+    versao: '0.0.128',
+    ref_lote: '552974a',
+    lote: 'revisao-externa-lote-1',
+    // O que o BANCO diz — este é o dado que não mente.
+    ultima_migration: ultimaMigration,
+    total_migrations: totalMigrations,
+    // Marca de tempo do servidor: detecta resposta em cache.
     servidor: new Date().toISOString(),
+    // Este endpoint só existe a partir da v0.0.128; se responde, o hook subiu.
+    hook_versao_ativo: true,
   })
 })

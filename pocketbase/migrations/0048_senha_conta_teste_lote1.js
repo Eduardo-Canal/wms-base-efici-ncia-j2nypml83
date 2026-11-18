@@ -1,11 +1,19 @@
 // 0048_senha_conta_teste_lote1.js
 //
-// A 0044 criou `teste.admin.lote1@exemplo.com` com senha aleatoria que so foi
-// para o log da migration, e esse log nao aparece no list_logs. Esta migration
-// define senha conhecida para a conta de teste do lote.
+// A 0044 criou `teste.admin.lote1@exemplo.com` com senha aleatória que só foi
+// para o log da migration — e o log da migration não aparece no
+// skip_cloud_list_logs (que mostra hooks, requests, emails e crons). Resultado:
+// a conta existe, mas eu não consigo entrar nela para rodar os testes de admin
+// (portão, diagnóstico do Bunny, limite).
 //
-// SEGURO PORQUE: a conta e identificavel pelo padrao que o dono pediu
-// ("teste"), e sera apagada no fim do lote (migration 0051).
+// Esta migration define uma senha CONHECIDA para essa conta de teste. É seguro
+// porque:
+//   * a conta é identificável pelo padrão que o dono pediu ("teste");
+//   * é a ÚNICA conta com senha conhecida, e ela será apagada no fim do lote;
+//   * não tem matrícula de aluno real e não é usada por ninguém.
+//
+// POR QUE MIGRATION E NÃO ENDPOINT: `papel` e senha de admin só se alteram por
+// migration (o usuarios-guard bloqueia pela API, por desenho).
 
 migrate(
   (app) => {
@@ -33,6 +41,6 @@ migrate(
     }
   },
   (app) => {
-    // Reverter nao faz sentido: a conta sera removida em migration propria.
+    // Reverter não faz sentido: a conta será removida em migration própria.
   },
 )

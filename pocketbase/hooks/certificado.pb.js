@@ -332,6 +332,59 @@ routerAdd(
 routerAdd('GET', '/backend/v1/certificado/{codigo}', (e) => {
   const texto = (v) => (v === undefined || v === null ? '' : String(v).trim())
 
+  // ---- LIMITE DE REQUISIÇÕES (revisão externa, item 11) ----
+  // 30 consultas por minuto por IP. A validação é pública e o código tem 8
+  // caracteres: sem limite, um script varre o espaço de códigos e descobre
+  // nomes de alunos. Contagem no banco (o limitador nativo não cobre rota
+  // própria — testado).
+  try {
+    const agoraMs = Date.now()
+    const janelaMs = 60 * 1000
+    const LIMITE = 30
+    let ip = ''
+    try {
+      ip = String(e.realIP() || '')
+    } catch (_) {}
+    const chave = 'certificado_publico|' + ip
+
+    let reg = null
+    try {
+      reg = $app.findFirstRecordByFilter('limite_requisicoes', 'chave = {:c}', { c: chave })
+    } catch (_) {}
+
+    let contador = 1
+    if (reg) {
+      const inicioStr = reg.getString('janela_inicio')
+      let inicio = 0
+      if (inicioStr) {
+        const t = new Date(String(inicioStr).replace(' ', 'T')).getTime()
+        if (!isNaN(t)) inicio = t
+      }
+      if (inicio > 0 && agoraMs - inicio < janelaMs) contador = reg.getInt('contador') + 1
+      else contador = 1
+    }
+
+    if (contador > LIMITE) {
+      return e.json(429, {
+        codigo: 'muitas_consultas',
+        mensagem: 'Muitas consultas em pouco tempo. Aguarde um minuto.',
+      })
+    }
+
+    if (!reg) {
+      const colLim = $app.findCollectionByNameOrId('limite_requisicoes')
+      reg = new Record(colLim)
+      reg.set('chave', chave)
+      reg.set('janela_inicio', new Date().toISOString())
+    } else if (contador === 1) {
+      reg.set('janela_inicio', new Date().toISOString())
+    }
+    reg.set('contador', contador)
+    $app.save(reg)
+  } catch (errLim) {
+    console.log('[ead][limite] certificado: ' + errLim.message)
+  }
+
   const codigo = texto(e.request.pathValue('codigo')).toUpperCase()
   if (!codigo) return e.json(400, { codigo: 'codigo_obrigatorio', mensagem: 'Informe o código.' })
 

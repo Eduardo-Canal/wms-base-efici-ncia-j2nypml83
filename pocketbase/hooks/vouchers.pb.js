@@ -47,6 +47,65 @@ routerAdd(
         })
     }
 
+    // ---- LIMITE DE REQUISIÇÕES (revisão externa, item 11) ----
+    // O limitador nativo do PocketBase não cobre rota própria (testado: a
+    // rajada passava). Contagem no banco: 10 tentativas por minuto por IP.
+    // Protege o código do voucher de força bruta — 10 caracteres sem O/0 e I/1
+    // ainda são muitos, mas com 10/min um script levaria anos.
+    try {
+      const agoraMs = Date.now()
+      const janelaMs = 60 * 1000
+      const LIMITE = 10
+      let ip = ''
+      try {
+        ip = String(e.realIP() || '')
+      } catch (_) {}
+      const chave = 'voucher_resgatar|' + ip
+
+      let reg = null
+      try {
+        reg = $app.findFirstRecordByFilter('limite_requisicoes', 'chave = {:c}', { c: chave })
+      } catch (_) {}
+
+      let contador = 1
+      if (reg) {
+        const inicioStr = reg.getString('janela_inicio')
+        let inicio = 0
+        if (inicioStr) {
+          const t = new Date(String(inicioStr).replace(' ', 'T')).getTime()
+          if (!isNaN(t)) inicio = t
+        }
+        if (inicio > 0 && agoraMs - inicio < janelaMs) {
+          contador = reg.getInt('contador') + 1
+        } else {
+          // janela nova
+          contador = 1
+        }
+      }
+
+      if (contador > LIMITE) {
+        return e.json(429, {
+          codigo: 'muitas_tentativas',
+          mensagem: 'Muitas tentativas de resgate. Aguarde um minuto e tente de novo.',
+        })
+      }
+
+      if (!reg) {
+        const colLim = $app.findCollectionByNameOrId('limite_requisicoes')
+        reg = new Record(colLim)
+        reg.set('chave', chave)
+        reg.set('janela_inicio', new Date().toISOString())
+      } else if (contador === 1) {
+        reg.set('janela_inicio', new Date().toISOString())
+      }
+      reg.set('contador', contador)
+      $app.save(reg)
+    } catch (errLim) {
+      // Limite é proteção, não caminho crítico: se a contagem falhar, o
+      // resgate continua (e fica registrado no log).
+      console.log('[ead][limite] falhou: ' + errLim.message)
+    }
+
     const auth = e.requestInfo().auth
     if (!auth) {
       return e.json(401, {

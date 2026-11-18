@@ -193,8 +193,16 @@ routerAdd(
           var r = new Record(col)
           if (userId) r.set('user', userId)
           r.set('aula', aulaId)
-          var sal = comum.segredo('EAD_IP_SALT') || 'ead-sem-sal'
-          r.set('ip_hash', comum.sha256hex(sal + '|' + String(ip || '')))
+          // REVISÃO EXTERNA (item 16): o sal fixo 'ead-sem-sal' anulava o
+          // propósito do hash — sem sal secreto, o IP volta por tabela de
+          // comparação (só existem ~4 bilhões de IPv4). Agora, sem o segredo
+          // EAD_IP_SALT, NÃO grava hash de IP: guarda vazio em vez de gravar
+          // dado pessoal falso-sensuro. A linha continua registrando o acesso
+          // (que é o que o relatório precisa).
+          var sal = comum.segredo('EAD_IP_SALT')
+          if (sal) {
+            r.set('ip_hash', comum.sha256hex(sal + '|' + String(ip || '')))
+          }
           r.set('user_agent', String(ua || '').substring(0, 300))
           r.set('em', comum.agoraIso())
           r.set('tipo', tipo)

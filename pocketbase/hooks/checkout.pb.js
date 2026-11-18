@@ -27,6 +27,50 @@
 // Libs INLINE: require local não funciona no JSVM deste projeto.
 
 routerAdd('POST', '/backend/v1/checkout', (e) => {
+  // ---- PORTÃO (revisão externa, item 12) ----
+  // Área fechada: compra não acontece — o catálogo também está oculto, então
+  // aceitar checkout seria vender um curso que ninguém vê. Equipe passa para
+  // testar; e quem já tem matrícula ativa passa (caso de renovação/segundo curso).
+  var areaAbertaPg = false
+  try {
+    var cfgPg = $app.findFirstRecordByFilter('ead_config', "chave = 'principal'")
+    areaAbertaPg = cfgPg.getBool('liberado') === true
+  } catch (_pg) {
+    areaAbertaPg = false
+  }
+  if (!areaAbertaPg) {
+    var authPg = null
+    try {
+      authPg = e.requestInfo().auth
+    } catch (_pg2) {}
+    var liberadoPg = false
+    try {
+      if (authPg) {
+        if (authPg.collection().name === '_superusers') liberadoPg = true
+        else {
+          var papelPg = String(authPg.get('papel'))
+          if (papelPg === 'admin' || papelPg === 'suporte') liberadoPg = true
+          else {
+            var msPg = $app.findRecordsByFilter(
+              'matriculas',
+              "user = {:u} && status = 'ativa'",
+              '',
+              1,
+              0,
+              { u: authPg.id },
+            )
+            if (msPg && msPg.length) liberadoPg = true
+          }
+        }
+      }
+    } catch (_pg3) {}
+    if (!liberadoPg)
+      return e.json(403, {
+        codigo: 'ead_fechado',
+        mensagem: 'A área de cursos ainda não está aberta para compra.',
+      })
+  }
+
   const comum = {
     segredo: function (nome) {
       try {

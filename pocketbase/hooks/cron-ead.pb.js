@@ -86,6 +86,41 @@ cronAdd('ead_reconciliacao_pagamentos', '*/15 * * * *', () => {
       try {
         usuario = app.findAuthRecordByEmail('users', emailCompra)
       } catch (_) {}
+
+      // Item 6 da revisão externa, replicado aqui: esta é a MESMA lógica do
+      // webhook e precisa da mesma correção. Conta pré-existente com e-mail
+      // não verificado é trocada de senha (derruba sessão de terceiro) e
+      // recebe o fluxo de definir senha, antes de ganhar a matrícula.
+      if (usuario && !usuario.getBool('verified')) {
+        try {
+          usuario.set('password', $security.randomString(40))
+          usuario.set('passwordConfirm', usuario.getString('password'))
+          usuario.set('verified', false)
+          app.save(usuario)
+          console.log('[ead][cron] conta nao verificada: senha rotacionada ' + emailCompra)
+        } catch (eRot) {
+          console.log('[ead][cron] falha ao rotacionar senha: ' + eRot.message)
+        }
+        try {
+          var baseCron = ''
+          try {
+            baseCron = String(comum.segredo('PB_INSTANCE_URL') || '')
+          } catch (_bc) {}
+          if (!baseCron) baseCron = 'http://127.0.0.1:8090'
+          if (baseCron.charAt(baseCron.length - 1) === '/')
+            baseCron = baseCron.substring(0, baseCron.length - 1)
+          $http.send({
+            url: baseCron + '/api/collections/users/request-password-reset',
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: emailCompra }),
+            timeout: 10,
+          })
+        } catch (eMailCron) {
+          console.log('[ead][cron] envio de definir senha falhou: ' + eMailCron.message)
+        }
+      }
+
       if (!usuario && emailCompra) {
         try {
           var usersCol = app.findCollectionByNameOrId('users')
@@ -225,16 +260,55 @@ cronAdd('ead_reconciliacao_pagamentos', '*/15 * * * *', () => {
           pedido1 = app.findRecordById('pedidos', ref1)
         } catch (_) {}
       }
+      // Plano B (item 5 da revisão externa) — MESMA regra do webhook: só casa
+      // quando o valor pago é igual ao do pedido e o pagamento é posterior a
+      // ele. Aqui o risco é ainda maior que no webhook: o cron roda sozinho,
+      // então um casamento errado libera curso sem ninguém olhar.
       if (!pedido1) {
         var email1 = comum.texto(recurso1.payer && recurso1.payer.email).toLowerCase()
         if (email1) {
+          var cands1 = []
           try {
-            pedido1 = app.findFirstRecordByFilter(
+            cands1 = app.findRecordsByFilter(
               'pedidos',
               "email_comprador = {:e} && status = 'pendente'",
+              '-created',
+              20,
+              0,
               { e: email1 },
             )
           } catch (_) {}
+          var pagoEm1 = 0
+          try {
+            var dt1 = comum.texto(recurso1.date_approved || recurso1.date_created)
+            if (dt1) {
+              var t1 = new Date(dt1.replace(' ', 'T')).getTime()
+              if (!isNaN(t1)) pagoEm1 = t1
+            }
+          } catch (_) {}
+          for (var ci1 = 0; ci1 < cands1.length; ci1++) {
+            var cand1 = cands1[ci1]
+            var vp1 = cand1.getInt('valor_centavos')
+            if (!vp1 || vp1 !== valor1) continue
+            if (pagoEm1 > 0) {
+              var cr1 = 0
+              try {
+                var cs1 = comum.texto(cand1.getString('criado_em') || cand1.getString('created'))
+                if (cs1) {
+                  var tc1 = new Date(cs1.replace(' ', 'T')).getTime()
+                  if (!isNaN(tc1)) cr1 = tc1
+                }
+              } catch (_) {}
+              if (cr1 > 0 && pagoEm1 < cr1 - 5 * 60 * 1000) continue
+            }
+            pedido1 = cand1
+            break
+          }
+          if (!pedido1 && cands1.length) {
+            try {
+              pag.set('observacao', 'valor_ou_data_divergente')
+            } catch (_) {}
+          }
         }
       }
       if (!pedido1) {

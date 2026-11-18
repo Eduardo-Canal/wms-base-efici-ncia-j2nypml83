@@ -29,6 +29,18 @@
 onRecordAfterCreateSuccess((e) => {
   const texto = (v) => (v === undefined || v === null ? '' : String(v).trim())
 
+  // REVISÃO EXTERNA (item 15): o `name` vinha do banco e era concatenado
+  // direto no HTML do e-mail. Quem se cadastrasse com nome contendo HTML
+  // injetava marcação no e-mail enviado em nome do curso (phishing com o
+  // remetente do dono). Escapa antes de montar.
+  const escapa = (s) =>
+    String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+
   try {
     // Só avisa quem de fato tem acesso agora.
     if (texto(e.record.getString('status')) !== 'ativa') {
@@ -50,7 +62,8 @@ onRecordAfterCreateSuccess((e) => {
       e.next()
       return
     }
-    const nome = texto(aluno.getString('name')) || 'tudo bem'
+    // Escapado na origem: este valor entra no HTML do e-mail.
+    const nome = escapa(texto(aluno.getString('name')) || 'tudo bem')
 
     // ---- qual curso ----
     let curso = null

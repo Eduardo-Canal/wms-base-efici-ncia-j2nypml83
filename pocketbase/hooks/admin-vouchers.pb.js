@@ -119,11 +119,12 @@ routerAdd(
       }
     } else {
       // Gera sem O/0 e I/1: na hora de digitar, essas letras confundem.
+      //
+      // REVISÃO EXTERNA (item 10): Math.random não é criptográfico e a
+      // sequência é previsível — dá para prever os próximos vouchers gerados.
+      // Passa a usar CSPRNG, com no mínimo 10 caracteres.
       const alfabeto = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-      codigo = ''
-      for (let i = 0; i < 8; i++) {
-        codigo += alfabeto.charAt(Math.floor(Math.random() * alfabeto.length))
-      }
+      codigo = String($security.randomStringWithAlphabet(10, alfabeto))
     }
 
     // Duplicado? Recusa em vez de sobrescrever um voucher que já está circulando.

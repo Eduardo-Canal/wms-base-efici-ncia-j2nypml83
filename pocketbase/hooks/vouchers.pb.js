@@ -24,34 +24,11 @@ routerAdd(
   (e) => {
     const texto = (v) => (v === undefined || v === null ? '' : String(v).trim())
 
-    // ---- PORTÃO (revisão externa, item 12) ----
-    // Área fechada: equipe e quem tem matrícula ativa passam; visitante e conta
-    // sem matrícula não. Exceção deliberada: quem está resgatando um voucher
-    // NÃO tem matrícula ainda — é justamente o que o resgate cria. Por isso o
-    // portão aqui deixa passar qualquer conta autenticada e a checagem de
-    // matrícula fica para as rotas que leem conteúdo.
-    var areaAbertaPg = false
-    try {
-      var cfgPg = $app.findFirstRecordByFilter('ead_config', "chave = 'principal'")
-      areaAbertaPg = cfgPg.getBool('liberado') === true
-    } catch (_pg) {
-      areaAbertaPg = false
-    }
-    if (!areaAbertaPg) {
-      var authPg = e.requestInfo().auth
-      if (!authPg)
-        return e.json(403, {
-          codigo: 'ead_fechado',
-          mensagem:
-            'A área de cursos ainda não está aberta. Entre na sua conta para usar o código.',
-        })
-    }
-
-    // ---- LIMITE DE REQUISIÇÕES (revisão externa, item 11) ----
-    // O limitador nativo do PocketBase não cobre rota própria (testado: a
-    // rajada passava). Contagem no banco: 10 tentativas por minuto por IP.
-    // Protege o código do voucher de força bruta — 10 caracteres sem O/0 e I/1
-    // ainda são muitos, mas com 10/min um script levaria anos.
+    // ---- LIMITE DE REQUISIÇÕES PRIMEIRO (revisão externa, item 11) ----
+    // Tem que vir ANTES do portão e do login: a rajada que testei passava
+    // batida porque a resposta 401 do "sem login" acontecia antes da contagem.
+    // Um código de voucher é adivinhável por força bruta; o limite só protege
+    // se contar toda tentativa, autenticada ou não.
     try {
       const agoraMs = Date.now()
       const janelaMs = 60 * 1000
@@ -75,12 +52,8 @@ routerAdd(
           const t = new Date(String(inicioStr).replace(' ', 'T')).getTime()
           if (!isNaN(t)) inicio = t
         }
-        if (inicio > 0 && agoraMs - inicio < janelaMs) {
-          contador = reg.getInt('contador') + 1
-        } else {
-          // janela nova
-          contador = 1
-        }
+        if (inicio > 0 && agoraMs - inicio < janelaMs) contador = reg.getInt('contador') + 1
+        else contador = 1
       }
 
       if (contador > LIMITE) {
@@ -101,9 +74,30 @@ routerAdd(
       reg.set('contador', contador)
       $app.save(reg)
     } catch (errLim) {
-      // Limite é proteção, não caminho crítico: se a contagem falhar, o
-      // resgate continua (e fica registrado no log).
-      console.log('[ead][limite] falhou: ' + errLim.message)
+      console.log('[ead][limite] voucher: ' + errLim.message)
+    }
+
+    // ---- PORTÃO (revisão externa, item 12) ----
+    // Área fechada: equipe e quem tem matrícula ativa passam; visitante e conta
+    // sem matrícula não. Exceção deliberada: quem está resgatando um voucher
+    // NÃO tem matrícula ainda — é justamente o que o resgate cria. Por isso o
+    // portão aqui deixa passar qualquer conta autenticada e a checagem de
+    // matrícula fica para as rotas que leem conteúdo.
+    var areaAbertaPg = false
+    try {
+      var cfgPg = $app.findFirstRecordByFilter('ead_config', "chave = 'principal'")
+      areaAbertaPg = cfgPg.getBool('liberado') === true
+    } catch (_pg) {
+      areaAbertaPg = false
+    }
+    if (!areaAbertaPg) {
+      var authPg = e.requestInfo().auth
+      if (!authPg)
+        return e.json(403, {
+          codigo: 'ead_fechado',
+          mensagem:
+            'A área de cursos ainda não está aberta. Entre na sua conta para usar o código.',
+        })
     }
 
     const auth = e.requestInfo().auth

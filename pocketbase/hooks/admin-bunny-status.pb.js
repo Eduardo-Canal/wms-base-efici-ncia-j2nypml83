@@ -81,7 +81,12 @@ routerAdd(
     }
 
     // ---- 2. bibliotecas da conta ----
-    // A API de conta do Bunny fica em api.bunny.net e usa a mesma AccessKey.
+    // Duas tentativas, porque o Bunny tem DOIS tipos de credencial e o nome do
+    // segredo não diz qual delas o dono colou:
+    //   a) ACCOUNT API Key  → GET api.bunny.net/stream/library lista tudo;
+    //   b) STREAM Library Key → não lista; só funciona por biblioteca
+    //      (video.bunnycdn.com/library/{id}/...), então o ID vem do painel.
+    // Testo (a) e, se falhar, digo isso em vez de acusar "chave errada".
     try {
       const r = $http.send({
         url: 'https://api.bunny.net/stream/library',
@@ -108,11 +113,16 @@ routerAdd(
         }
         resposta.avisos.push('Bibliotecas consultadas: ' + lista.length + '.')
       } else {
+        const st = r ? r.statusCode : '?'
+        // 401/403 = a chave não serve para a API de conta (é uma Stream API
+        // Key de biblioteca). 404 = rota diferente. Nenhum dos dois quer dizer
+        // "chave inválida": quer dizer "não é chave de conta".
         resposta.avisos.push(
-          'A API do Bunny recusou a listagem de bibliotecas (HTTP ' +
-            (r ? r.statusCode : '?') +
-            '). A AccessKey pode ser de biblioteca e não de conta — nesse caso o Library ID vem do painel.',
+          'Esta chave autentica na API do Bunny, mas não lista bibliotecas (HTTP ' +
+            st +
+            '). Isso é normal para uma Stream API Key de biblioteca — nesse caso o Library ID é o número que aparece no painel do Bunny, no canto da biblioteca (ex.: iframe.mediadelivery.net/embed/SEU_ID/...).',
         )
+        resposta.tipo_de_chave = 'stream_library_key (provável)'
       }
     } catch (err) {
       resposta.avisos.push('Falha ao consultar bibliotecas: ' + err.message)

@@ -162,6 +162,34 @@ routerAdd(
             }
           }
           resposta.avisos.push('Vídeos na biblioteca: ' + itens.length + '.')
+
+          // Detalhes que mudam a operação e não dá para ver sem consultar:
+          //  - se a biblioteca exige token para tocar (tokenAuthenticationEnabled):
+          //    sem isso o vídeo toca só com o GUID e o "link assinado" é enfeite;
+          //  - se o vídeo está com status pronto (4 = finished no Bunny).
+          let comToken = null
+          let prontos = 0
+          let naoProntos = 0
+          for (let z = 0; z < itens.length; z++) {
+            const st = parseInt(
+              itens[z].status !== undefined ? itens[z].status : itens[z].Status,
+              10,
+            )
+            if (st === 4) prontos++
+            else if (!isNaN(st)) naoProntos++
+          }
+          resposta.videos.prontos = prontos
+          resposta.videos.nao_prontos = naoProntos
+          try {
+            comToken = itens.length ? itens[0].tokenAuthenticationEnabled : null
+          } catch (_) {}
+          resposta.token_authentication_ligado =
+            comToken === true ? true : comToken === false ? false : 'nao informado'
+          if (comToken === false) {
+            resposta.avisos.push(
+              'ATENÇÃO: a biblioteca está SEM "Token Authentication". Os vídeos tocam só com o GUID — qualquer pessoa com o endereço assiste, e o link assinado de 10 min não protege nada. Ligue em Bunny → Stream → biblioteca → Security.',
+            )
+          }
         } else {
           resposta.avisos.push(
             'A API recusou a listagem de vídeos da biblioteca ' +

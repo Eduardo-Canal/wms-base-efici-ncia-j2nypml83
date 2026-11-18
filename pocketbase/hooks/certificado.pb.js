@@ -26,7 +26,50 @@ routerAdd(
   (e) => {
     const texto = (v) => (v === undefined || v === null ? '' : String(v).trim())
 
+    // ---- PORTÃO (revisão externa, item 12) ----
+    // Área fechada: equipe e quem tem matrícula ativa passam; visitante e conta
+    // sem matrícula não. Emissão de certificado não existia no portão.
+    var areaAbertaPg = false
+    try {
+      var cfgPg = $app.findFirstRecordByFilter('ead_config', "chave = 'principal'")
+      areaAbertaPg = cfgPg.getBool('liberado') === true
+    } catch (_pg) {
+      areaAbertaPg = false
+    }
+
     const auth = e.requestInfo().auth
+
+    if (!areaAbertaPg) {
+      var liberadoPg = false
+      try {
+        if (auth) {
+          if (auth.collection().name === '_superusers') liberadoPg = true
+          else {
+            var papelPg = String(auth.get('papel'))
+            if (papelPg === 'admin' || papelPg === 'suporte') liberadoPg = true
+            else {
+              var msPg = $app.findRecordsByFilter(
+                'matriculas',
+                "user = {:u} && status = 'ativa'",
+                '',
+                1,
+                0,
+                { u: auth.id },
+              )
+              if (msPg && msPg.length) liberadoPg = true
+            }
+          }
+        }
+      } catch (_pg2) {
+        liberadoPg = false
+      }
+      if (!liberadoPg)
+        return e.json(403, {
+          codigo: 'ead_fechado',
+          mensagem: 'A área de cursos ainda não está aberta.',
+        })
+    }
+
     if (!auth) return e.json(401, { codigo: 'precisa_login', mensagem: 'Entre para continuar.' })
 
     const slug = texto(e.request.pathValue('slug'))
@@ -36,6 +79,52 @@ routerAdd(
     } catch (_) {}
     if (!curso)
       return e.json(404, { codigo: 'curso_inexistente', mensagem: 'Curso não encontrado.' })
+
+    // ---- 0. MATRÍCULA ATIVA (revisão externa, item 3) ----
+    // Antes a emissão olhava só o progresso. Progresso é dado do aluno, mas
+    // "ter feito as aulas" não é "ter o curso": quem foi reembolsado, quem
+    // perdeu o acesso ou quem só assistiu a amostra não pode receber
+    // certificado. A equipe passa para conseguir testar.
+    const ehEquipe = (() => {
+      try {
+        if (auth.collection().name === '_superusers') return true
+        const p = String(auth.get('papel'))
+        return p === 'admin' || p === 'suporte'
+      } catch (_) {
+        return false
+      }
+    })()
+    if (!ehEquipe) {
+      let temMatricula = false
+      try {
+        const ms = $app.findRecordsByFilter(
+          'matriculas',
+          "user = {:u} && curso = {:c} && status = 'ativa'",
+          '',
+          1,
+          0,
+          { u: auth.id, c: curso.id },
+        )
+        temMatricula = !!(ms && ms.length)
+      } catch (_) {}
+      if (!temMatricula)
+        return e.json(403, {
+          codigo: 'sem_matricula',
+          mensagem: 'O certificado é emitido para quem tem acesso ativo ao curso.',
+        })
+    }
+
+    // ---- 0b. NOME DO ALUNO (revisão externa, item 3) ----
+    // O certificado é um documento: precisa de nome de pessoa. Antes, sem nome,
+    // gravava o E-MAIL em nome_aluno — e a validação pública devolvia o e-mail
+    // de quem se formou. Exigir o nome resolve na origem.
+    const nomeAluno = texto(auth.getString('name'))
+    if (!nomeAluno)
+      return e.json(409, {
+        codigo: 'nome_obrigatorio',
+        mensagem:
+          'Antes de emitir o certificado, preencha o seu nome completo no perfil. É esse nome que aparece no documento.',
+      })
 
     // ---- 1. já tem certificado? devolve o mesmo (idempotente) ----
     try {
@@ -169,14 +258,14 @@ routerAdd(
 
     // ---- 4. código de verificação ----
     // Formato legível em voz alta e por telefone: WMS-XXXX-XXXX (sem O/0 e I/1).
+    //
+    // REVISÃO EXTERNA (item 10): Math.random NÃO é criptográfico — dá para
+    // prever a sequência e com isso adivinhar códigos de certificado. Agora usa
+    // $security.randomStringWithAlphabet (CSPRNG).
     function gerarCodigo() {
       const alfa = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-      let s = ''
-      for (let i = 0; i < 8; i++) {
-        if (i === 4) s += '-'
-        s += alfa.charAt(Math.floor(Math.random() * alfa.length))
-      }
-      return 'WMS-' + s
+      const s = String($security.randomStringWithAlphabet(8, alfa))
+      return 'WMS-' + s.substring(0, 4) + '-' + s.substring(4, 8)
     }
 
     let codigo = gerarCodigo()
@@ -200,7 +289,9 @@ routerAdd(
       c.set('user', auth.id)
       c.set('curso', curso.id)
       c.set('codigo', codigo)
-      c.set('nome_aluno', texto(auth.getString('name')) || texto(auth.getString('email')))
+      // Nome já validado acima: o e-mail NUNCA entra neste campo, porque ele é
+      // devolvido pela validação pública.
+      c.set('nome_aluno', nomeAluno)
       c.set('titulo_curso', texto(curso.getBool('cert_ativo')) ? curso.getString('titulo') : '')
       if (curso.getString('cert_titulo')) c.set('titulo_curso', curso.getString('cert_titulo'))
       c.set('carga_horas', curso.getInt('cert_carga_horas'))
@@ -241,6 +332,59 @@ routerAdd(
 routerAdd('GET', '/backend/v1/certificado/{codigo}', (e) => {
   const texto = (v) => (v === undefined || v === null ? '' : String(v).trim())
 
+  // ---- LIMITE DE REQUISIÇÕES (revisão externa, item 11) ----
+  // 30 consultas por minuto por IP. A validação é pública e o código tem 8
+  // caracteres: sem limite, um script varre o espaço de códigos e descobre
+  // nomes de alunos. Contagem no banco (o limitador nativo não cobre rota
+  // própria — testado).
+  try {
+    const agoraMs = Date.now()
+    const janelaMs = 60 * 1000
+    const LIMITE = 30
+    let ip = ''
+    try {
+      ip = String(e.realIP() || '')
+    } catch (_) {}
+    const chave = 'certificado_publico|' + ip
+
+    let reg = null
+    try {
+      reg = $app.findFirstRecordByFilter('limite_requisicoes', 'chave = {:c}', { c: chave })
+    } catch (_) {}
+
+    let contador = 1
+    if (reg) {
+      const inicioStr = reg.getString('janela_inicio')
+      let inicio = 0
+      if (inicioStr) {
+        const t = new Date(String(inicioStr).replace(' ', 'T')).getTime()
+        if (!isNaN(t)) inicio = t
+      }
+      if (inicio > 0 && agoraMs - inicio < janelaMs) contador = reg.getInt('contador') + 1
+      else contador = 1
+    }
+
+    if (contador > LIMITE) {
+      return e.json(429, {
+        codigo: 'muitas_consultas',
+        mensagem: 'Muitas consultas em pouco tempo. Aguarde um minuto.',
+      })
+    }
+
+    if (!reg) {
+      const colLim = $app.findCollectionByNameOrId('limite_requisicoes')
+      reg = new Record(colLim)
+      reg.set('chave', chave)
+      reg.set('janela_inicio', new Date().toISOString())
+    } else if (contador === 1) {
+      reg.set('janela_inicio', new Date().toISOString())
+    }
+    reg.set('contador', contador)
+    $app.save(reg)
+  } catch (errLim) {
+    console.log('[ead][limite] certificado: ' + errLim.message)
+  }
+
   const codigo = texto(e.request.pathValue('codigo')).toUpperCase()
   if (!codigo) return e.json(400, { codigo: 'codigo_obrigatorio', mensagem: 'Informe o código.' })
 
@@ -279,10 +423,19 @@ routerAdd('GET', '/backend/v1/certificado/{codigo}', (e) => {
 
   // Devolve só o necessário para conferência. Nada de e-mail, id de usuário
   // ou qualquer dado que permita contato — quem tem o código já sabe o nome.
+  //
+  // REVISÃO EXTERNA (item 3): certificados antigos gravaram o E-MAIL em
+  // `nome_aluno` quando faltava nome. Mesmo com a emissão corrigida, os
+  // registros antigos continuam no banco — então aqui o campo é higienizado na
+  // saída: se o valor parece e-mail, devolve "Aluno(a)". O documento confere
+  // pelo código; o e-mail de ninguém sai por rota pública.
+  let nomePublico = texto(c.getString('nome_aluno'))
+  if (!nomePublico || nomePublico.indexOf('@') !== -1) nomePublico = 'Aluno(a)'
+
   return e.json(200, {
     valido: true,
     codigo: c.getString('codigo'),
-    nome_aluno: c.getString('nome_aluno'),
+    nome_aluno: nomePublico,
     titulo_curso: c.getString('titulo_curso'),
     carga_horas: c.getInt('carga_horas'),
     assinante_nome: c.getString('assinante_nome'),

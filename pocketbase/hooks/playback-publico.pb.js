@@ -129,9 +129,14 @@ routerAdd('GET', '/backend/v1/aulas/{slug}/playback-publico', (e) => {
         // de IP. O sal fixo anterior dava falsa sensação de anonimização: IP é
         // um espaço pequeno e volta por força bruta. Sem sal, guardar vazio é
         // mais honesto (e o acesso continua registrado).
+        // CORREÇÃO (18/11): `ip_hash` é obrigatório na coleção — gravar vazio
+        // fazia o save falhar com "cannot be blank" e NENHUM acesso era
+        // registrado. Sem sal, grava marcador explícito.
         var sal = comum.segredo('EAD_IP_SALT')
         if (sal) {
           r.set('ip_hash', comum.sha256hex(sal + '|' + String(ip || '')))
+        } else {
+          r.set('ip_hash', 'sem_sal_configurado')
         }
         r.set('user_agent', String(ua || '').substring(0, 300))
         r.set('em', new Date().toISOString())

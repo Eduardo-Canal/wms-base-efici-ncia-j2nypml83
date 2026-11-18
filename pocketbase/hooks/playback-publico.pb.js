@@ -125,8 +125,14 @@ routerAdd('GET', '/backend/v1/aulas/{slug}/playback-publico', (e) => {
         var r = new Record(col)
         if (userId) r.set('user', userId)
         r.set('aula', aulaId)
-        var sal = comum.segredo('EAD_IP_SALT') || 'ead-sem-sal'
-        r.set('ip_hash', comum.sha256hex(sal + '|' + String(ip || '')))
+        // REVISÃO EXTERNA (item 16): sem o segredo EAD_IP_SALT não grava hash
+        // de IP. O sal fixo anterior dava falsa sensação de anonimização: IP é
+        // um espaço pequeno e volta por força bruta. Sem sal, guardar vazio é
+        // mais honesto (e o acesso continua registrado).
+        var sal = comum.segredo('EAD_IP_SALT')
+        if (sal) {
+          r.set('ip_hash', comum.sha256hex(sal + '|' + String(ip || '')))
+        }
         r.set('user_agent', String(ua || '').substring(0, 300))
         r.set('em', new Date().toISOString())
         r.set('tipo', tipo)
@@ -158,7 +164,33 @@ routerAdd('GET', '/backend/v1/aulas/{slug}/playback-publico', (e) => {
       mensagem: 'Vídeo indisponível no momento.',
     })
 
-  acesso.registrarLog(app, aula.id, '', e.realIP(), e.request.header.get('user-agent'), 'amostra')
+  // REVISÃO EXTERNA (item 16): antes gravava UMA linha por requisição anônima,
+  // então um script inflava log_acessos sem limite. Agora agrega: só grava a
+  // primeira abertura da mesma aula pelo mesmo IP na mesma hora. O relatório
+  // continua sabendo que houve acesso; deixa de ser um contador de requisições.
+  try {
+    var ipAtual = String(e.realIP() || '')
+    var salLog = comum.segredo('EAD_IP_SALT')
+    var ipChave = salLog ? comum.sha256hex(salLog + '|' + ipAtual) : ''
+    var umaHoraAtras = new Date(Date.now() - 3600 * 1000).toISOString()
+    var jaRegistrado = false
+    if (ipChave) {
+      var recentes = $app.findRecordsByFilter(
+        'log_acessos',
+        'aula = {:a} && ip_hash = {:i} && em > {:t}',
+        '',
+        1,
+        0,
+        { a: aula.id, i: ipChave, t: umaHoraAtras },
+      )
+      jaRegistrado = !!(recentes && recentes.length)
+    }
+    if (!jaRegistrado) {
+      acesso.registrarLog(app, aula.id, '', ipAtual, e.request.header.get('user-agent'), 'amostra')
+    }
+  } catch (_logErr) {
+    // Log nunca derruba a isca: o vídeo é a entrega.
+  }
 
   return e.json(200, {
     aula: aula.getString('slug'),

@@ -27,6 +27,50 @@
 // Libs INLINE: require local não funciona no JSVM deste projeto.
 
 routerAdd('POST', '/backend/v1/checkout', (e) => {
+  // ---- PORTÃO (revisão externa, item 12) ----
+  // Área fechada: compra não acontece — o catálogo também está oculto, então
+  // aceitar checkout seria vender um curso que ninguém vê. Equipe passa para
+  // testar; e quem já tem matrícula ativa passa (caso de renovação/segundo curso).
+  var areaAbertaPg = false
+  try {
+    var cfgPg = $app.findFirstRecordByFilter('ead_config', "chave = 'principal'")
+    areaAbertaPg = cfgPg.getBool('liberado') === true
+  } catch (_pg) {
+    areaAbertaPg = false
+  }
+  if (!areaAbertaPg) {
+    var authPg = null
+    try {
+      authPg = e.requestInfo().auth
+    } catch (_pg2) {}
+    var liberadoPg = false
+    try {
+      if (authPg) {
+        if (authPg.collection().name === '_superusers') liberadoPg = true
+        else {
+          var papelPg = String(authPg.get('papel'))
+          if (papelPg === 'admin' || papelPg === 'suporte') liberadoPg = true
+          else {
+            var msPg = $app.findRecordsByFilter(
+              'matriculas',
+              "user = {:u} && status = 'ativa'",
+              '',
+              1,
+              0,
+              { u: authPg.id },
+            )
+            if (msPg && msPg.length) liberadoPg = true
+          }
+        }
+      }
+    } catch (_pg3) {}
+    if (!liberadoPg)
+      return e.json(403, {
+        codigo: 'ead_fechado',
+        mensagem: 'A área de cursos ainda não está aberta para compra.',
+      })
+  }
+
   const comum = {
     segredo: function (nome) {
       try {
@@ -54,15 +98,11 @@ routerAdd('POST', '/backend/v1/checkout', (e) => {
     },
     // O nome do comprador vem inteiro; Orders separa em first/last.
     primeiroNome: function (nome) {
-      var p = String(nome || '')
-        .trim()
-        .split(/\s+/)
+      var p = String(nome || '').trim().split(/\s+/)
       return p[0] || ''
     },
     sobrenome: function (nome) {
-      var p = String(nome || '')
-        .trim()
-        .split(/\s+/)
+      var p = String(nome || '').trim().split(/\s+/)
       if (p.length < 2) return ''
       return p.slice(1).join(' ')
     },
@@ -271,9 +311,7 @@ routerAdd('POST', '/backend/v1/checkout', (e) => {
     } else {
       ultimoErro = 'orders HTTP ' + (rOrders ? rOrders.statusCode : 'sem resposta')
       try {
-        console.log(
-          '[ead] orders recusou: ' + ultimoErro + ' ' + toString(rOrders.body).substring(0, 300),
-        )
+        console.log('[ead] orders recusou: ' + ultimoErro + ' ' + toString(rOrders.body).substring(0, 300))
       } catch (_) {}
     }
   } catch (errOrders) {

@@ -20,18 +20,21 @@ routerAdd(
     const auth = e.requestInfo().auth
     if (!auth) return e.json(401, { codigo: 'precisa_login', mensagem: 'Entre para continuar.' })
 
-    let equipe = false
+    // REVISÃO EXTERNA (item 13): antes o papel `suporte` marcava aula de
+    // QUALQUER aluno sem deixar rastro. Quem é suporte atende aluno; não deve
+    // poder fabricar conclusão de curso no nome de outra pessoa. Restrito a
+    // admin e superusuário, e TODA marcação fica registrada no log com quem
+    // marcou, para quem e quando.
+    let admin = false
     try {
-      if (auth.collection().name === '_superusers') equipe = true
-      else {
-        const p = String(auth.get('papel'))
-        equipe = p === 'admin' || p === 'suporte'
-      }
+      if (auth.collection().name === '_superusers') admin = true
+      else admin = String(auth.get('papel')) === 'admin'
     } catch (_) {}
-    if (!equipe)
+    if (!admin)
       return e.json(403, {
-        codigo: 'somente_equipe',
-        mensagem: 'A aula é concluída automaticamente ao assistir. Só a equipe marca manualmente.',
+        codigo: 'somente_admin',
+        mensagem:
+          'A aula é concluída automaticamente ao assistir. Só o administrador marca manualmente.',
       })
 
     const slug = texto(e.request.pathValue('slug'))
@@ -76,7 +79,32 @@ routerAdd(
       linha.set('concluida', true)
       $app.save(linha)
     } catch (err) {
-      return e.json(400, { codigo: 'concluir_falhou', mensagem: 'Falhou: ' + err.message })
+      // Erro interno não vaza para o cliente.
+      console.log('[ead][concluir-equipe] falhou: ' + err.message)
+      return e.json(500, {
+        codigo: 'concluir_falhou',
+        mensagem: 'Não foi possível marcar a aula agora.',
+      })
+    }
+
+    // Registro de auditoria: quem marcou, para quem, quando.
+    try {
+      const logCol = $app.findCollectionByNameOrId('log_acessos')
+      const lg = new Record(logCol)
+      lg.set('user', alvo)
+      lg.set('aula', aula.id)
+      lg.set(
+        'user_agent',
+        'conclusao manual por ' + String(auth.getString('email') || auth.id) + ' em ' +
+          new Date().toISOString(),
+      )
+      lg.set('em', new Date().toISOString())
+      lg.set('tipo', 'conclusao_manual')
+      $app.save(lg)
+    } catch (eLog) {
+      // Log tem campo obrigatório próprio; falha aqui não desfaz a conclusão,
+      // mas deixa rastro no log do runtime.
+      console.log('[ead][concluir-equipe] auditoria falhou: ' + eLog.message)
     }
 
     return e.json(200, { ok: true, mensagem: 'Aula marcada como concluída pela equipe.' })

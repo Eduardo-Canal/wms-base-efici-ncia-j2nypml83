@@ -149,9 +149,13 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
   try {
     existente = app.findFirstRecordByFilter('pagamentos', 'payment_id = {:p}', { p: chaveRecurso })
   } catch (err) {}
-  if (existente && existente.getBool('processado')) {
-    return e.json(200, { recebido: true, duplicado: true })
-  }
+  // REVISÃO EXTERNA (item 4): antes esta linha respondia "duplicado" para
+  // QUALQUER notificação já processada. Como o reembolso chega com o MESMO id
+  // de pagamento, ele era descartado aqui e o trecho abaixo (que revoga o
+  // acesso em refunded/charged_back) nunca rodava — o aluno era reembolsado e
+  // continuava com o curso. Agora NÃO sai por aqui: segue para consultar o
+  // gateway e compara o status novo com o gravado. Só encerra como duplicado
+  // depois de conferir que o status é o mesmo.
   if (!existente) {
     try {
       var col = app.findCollectionByNameOrId('pagamentos')
@@ -191,6 +195,14 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
 
     var recurso = JSON.parse(toString(resp.body))
     var statusGw = comum.texto(recurso.status)
+
+    // ---- idempotência REAL (item 4) ----
+    // Só encerra quando o status consultado no gateway é o mesmo já gravado:
+    // repetição da mesma notificação não duplica nada, e mudança de status
+    // (approved → refunded) segue adiante e revoga o acesso.
+    if (existente.getBool('processado') && existente.getString('status') === statusGw) {
+      return e.json(200, { recebido: true, duplicado: true, status: statusGw })
+    }
 
     // Traduz os dois vocabulários para um só, porque o resto do sistema
     // (pedido, matrícula, painel) só conhece: pago / recusado / reembolsado.
@@ -235,23 +247,83 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
       } catch (x5) {}
     }
     // Plano B: e-mail do pagador. Em Orders o pagador está em `payer.email`.
+    //
+    // REVISÃO EXTERNA (item 5): antes, QUALQUER pagamento aprovado com o mesmo
+    // e-mail casava com QUALQUER pedido pendente daquele e-mail. Isso permite
+    // duas coisas ruins: (a) pagar R$ 1 e liberar um pedido de R$ 197;
+    // (b) um pagamento antigo liberar um pedido novo. Agora o plano B só vale
+    // quando o valor pago é IGUAL ao do pedido e o pagamento é posterior ao
+    // pedido. Fora disso, o pagamento fica para conferência manual no painel.
+    var suspeitaManual = ''
     if (!pedido) {
       var email = comum.texto(recurso.payer && recurso.payer.email).toLowerCase()
       if (email) {
+        var candidatos = []
         try {
-          pedido = app.findFirstRecordByFilter(
+          candidatos = app.findRecordsByFilter(
             'pedidos',
             "email_comprador = {:e} && status = 'pendente'",
+            '-created',
+            20,
+            0,
             { e: email },
           )
         } catch (x6) {}
+        // Data do pagamento no gateway (quando existir).
+        var pagoEm = 0
+        try {
+          var dtStr = comum.texto(recurso.date_approved || recurso.date_created)
+          if (dtStr) {
+            var t = new Date(dtStr.replace(' ', 'T')).getTime()
+            if (!isNaN(t)) pagoEm = t
+          }
+        } catch (_dt) {}
+        for (var ci = 0; ci < candidatos.length; ci++) {
+          var cand = candidatos[ci]
+          var valorPedido = cand.getInt('valor_centavos')
+          // Valor igual é obrigatório. Sem valor no pedido, não casa.
+          if (!valorPedido || valorPedido !== valor) continue
+          // Pagamento tem que ser posterior ao pedido (tolerância de 5 min
+          // para relógio do gateway).
+          if (pagoEm > 0) {
+            var criadoEm = 0
+            try {
+              var cs = comum.texto(cand.getString('criado_em') || cand.getString('created'))
+              if (cs) {
+                var tc = new Date(cs.replace(' ', 'T')).getTime()
+                if (!isNaN(tc)) criadoEm = tc
+              }
+            } catch (_c2) {}
+            if (criadoEm > 0 && pagoEm < criadoEm - 5 * 60 * 1000) continue
+          }
+          pedido = cand
+          break
+        }
+        if (!pedido && candidatos.length) {
+          // Existe pedido desse e-mail, mas nada bate em valor/data: não
+          // libera automático. Fica marcado para o dono conferir.
+          suspeitaManual = 'valor_ou_data_divergente'
+        } else if (!pedido && !candidatos.length) {
+          suspeitaManual = 'sem_pedido_para_o_email'
+        }
       }
     }
 
     if (!pedido) {
       existente.set('processado', false)
+      // Marca para conferência manual quando o pagamento existe mas não casa
+      // com pedido nenhum (item 5). O painel lista isso.
+      if (suspeitaManual) {
+        try {
+          existente.set('observacao', suspeitaManual)
+        } catch (_obs) {}
+      }
       app.save(existente)
-      return e.json(200, { recebido: true, aguardando: 'pedido' })
+      return e.json(200, {
+        recebido: true,
+        aguardando: 'pedido',
+        conferencia_manual: suspeitaManual || undefined,
+      })
     }
     existente.set('pedido', pedido.id)
 
@@ -274,6 +346,46 @@ routerAdd('POST', '/backend/v1/webhooks/mercadopago', (e) => {
       try {
         usuario = app.findAuthRecordByEmail('users', emailCompra)
       } catch (x7) {}
+
+      // ---- 6. conta existente com e-mail NÃO verificado ----
+      // REVISÃO EXTERNA (item 6): um terceiro podia pré-cadastrar o e-mail de
+      // outra pessoa e, quando ela comprasse, ficar com o curso. O comprador
+      // legítimo nunca recebia o curso, e o invasor sim.
+      // Correção: se a conta existir sem verificação, a senha é trocada por uma
+      // aleatória (derruba as sessões ativas do invasor), o e-mail volta a não
+      // verificado e a pessoa recebe o fluxo de definir senha.
+      if (usuario && !usuario.getBool('verified')) {
+        try {
+          usuario.set('password', $security.randomString(40))
+          usuario.set('passwordConfirm', usuario.getString('password'))
+          usuario.set('verified', false)
+          app.save(usuario)
+          console.log('[ead] conta nao verificada: senha rotacionada para ' + emailCompra)
+        } catch (xRot) {
+          console.log('[ead] falha ao rotacionar senha: ' + xRot.message)
+        }
+        // Envia o e-mail de definir senha pelo endpoint nativo. É o mesmo
+        // caminho que a tela "esqueci minha senha" usa — sem inventar token.
+        try {
+          var baseUrl = ''
+          try {
+            baseUrl = String(comum.segredo('PB_INSTANCE_URL') || '')
+          } catch (_b) {}
+          if (!baseUrl) baseUrl = 'http://127.0.0.1:8090'
+          if (baseUrl.charAt(baseUrl.length - 1) === '/')
+            baseUrl = baseUrl.substring(0, baseUrl.length - 1)
+          $http.send({
+            url: baseUrl + '/api/collections/users/request-password-reset',
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: emailCompra }),
+            timeout: 10,
+          })
+        } catch (xMail) {
+          console.log('[ead] envio de definir senha falhou: ' + xMail.message)
+        }
+      }
+
       if (!usuario && emailCompra) {
         try {
           var usersCol = app.findCollectionByNameOrId('users')

@@ -40,7 +40,11 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import Conteudo from './Conteudo'
+import Presentes from './Presentes'
+import ConteudoDores from './ConteudoDores'
 import CertificadoAdmin from './CertificadoAdmin'
+// TEMPORÁRIO (19/11): diagnóstico de IP para o teste das duas redes.
+import DiagnosticoIp from './DiagnosticoIp'
 
 function mensagemDe(e: unknown): string {
   const x = e as { status?: number; codigo?: string; message?: string }
@@ -178,7 +182,14 @@ export default function Admin() {
         />
       </div>
 
+      {/* COMANDO 3: aba de convites. Vem antes de Conteúdo porque é a rotina
+          comercial do dia; o conteúdo muda de vez em quando. */}
+      <Presentes />
+
       <Conteudo />
+
+      {/* comando 3, item 2: catálogo de dores, atendimento e regras */}
+      <ConteudoDores />
 
       <CertificadoAdmin />
 
@@ -187,6 +198,11 @@ export default function Admin() {
       <Vouchers />
 
       <Alunos />
+
+      {/* TEMPORÁRIO (19/11): cartão de diagnóstico de IP, para o dono provar o
+          item 1 chamando de duas redes. Remover esta linha e o arquivo
+          DiagnosticoIp.tsx quando o teste terminar. */}
+      <DiagnosticoIp />
     </div>
   )
 }

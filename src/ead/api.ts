@@ -1079,6 +1079,67 @@ export const apiLote2 = {
     return pedir('/backend/v1/ead/admin/presentes')
   },
 
+  // Cria o convite pessoal (comando 3, item 1). O código é gerado no servidor.
+  async adminCriarConvite(dados: {
+    nome_lead: string
+    empresa: string
+    email_destino: string
+    whatsapp_lead: string
+    curso_slug: string
+    responsavel: string
+    recado: string
+    so_este_email: boolean
+  }): Promise<{
+    ok: boolean
+    codigo: string
+    link: string
+    curso: { slug: string; titulo: string }
+  }> {
+    return pedir('/backend/v1/ead/admin/presente', {
+      method: 'POST',
+      body: JSON.stringify(dados),
+    })
+  },
+
+  // ---- comando 3, item 2: conteúdo ----
+  // Dores ativas com contagem de aulas (para o catálogo e os chips da aula).
+  async adminDores(): Promise<{
+    dores: Array<{ id: string; nome: string; ativo: boolean; texto: string; aulas: number }>
+  }> {
+    return pedir('/backend/v1/ead/admin/dores')
+  },
+
+  async adminSalvarDor(dados: {
+    id?: string
+    nome: string
+    ativo: boolean
+    texto_prediagnostico: string
+  }): Promise<{ ok: boolean; id: string }> {
+    return pedir('/backend/v1/ead/admin/dores', {
+      method: 'POST',
+      body: JSON.stringify(dados),
+    })
+  },
+
+  // Dores marcadas numa aula + qual é a porta de entrada.
+  async adminAulaDores(aulaId: string): Promise<{
+    dores: string[]
+    porta_entrada: string
+  }> {
+    return pedir(`/backend/v1/ead/admin/aula-dores?aula=${encodeURIComponent(aulaId)}`)
+  },
+
+  async adminSalvarAulaDores(dados: {
+    aula: string
+    dores: string[]
+    porta_entrada: string
+  }): Promise<{ ok: boolean }> {
+    return pedir('/backend/v1/ead/admin/aula-dores', {
+      method: 'POST',
+      body: JSON.stringify(dados),
+    })
+  },
+
   async adminPrediagnostico(codigo: string): Promise<Record<string, unknown>> {
     return pedir(`/backend/v1/ead/admin/prediagnostico/${encodeURIComponent(codigo)}`)
   },

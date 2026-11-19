@@ -1,19 +1,34 @@
 <!-- HTML template for the frontend react app: https://developer.mozilla.org/en-US/docs/Web/HTML --><!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WMS - Base para Eficiência</title>
+
+    <!-- Metadados do LIVRO (comando 3, item 3). O que estava aqui: lang="en"
+         (site em português), author "Skip" (a plataforma, não o autor) e uma
+         descrição quebrada em três linhas no meio da frase. -->
+    <title>Guia Masterclass de Implementação WMS — Eduardo Canal</title>
     <meta
       name="description"
-      content="Livro - Guia masterclass de
-implementação WMS (Construindo a Base para Eficiência: O
-Caminho para a Supremacia na Gestão
-de Armazéns)"
+      content="O guia prático para implementar WMS em operação logística in house: integrar ERP, escolher o sistema e construir a base para a eficiência do armazém. Por Eduardo Canal."
     />
-    <meta name="author" content="Skip (https://goskip.dev)" />
+    <meta name="author" content="Eduardo Canal" />
+    <meta name="keywords" content="WMS, logística, armazém, picking, ERP, in house, implementação" />
+
+    <!-- Open Graph: o título e a descrição repetem os da página; a imagem é a
+         capa do livro, que é o que identifica o produto quando o link circula. -->
+    <meta property="og:type" content="book" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:title" content="Guia Masterclass de Implementação WMS — Eduardo Canal" />
+    <meta
+      property="og:description"
+      content="O guia prático para implementar WMS em operação logística in house: integrar ERP, escolher o sistema e construir a base para a eficiência do armazém."
+    />
+    <!-- A capa é processada pelo bundler (o hash no nome é do build), então a
+         URL estável é /og-image.png — o arquivo público que o projeto já tem.
+         Apontar para /assets/capa-livro.jpg daria 404 em produção. -->
     <meta property="og:image" content="/og-image.png" />
-    <meta name="keywords" content="Logística, WMS, Armazén, Picking, in bound, outbound, ERP" />
+    <meta name="twitter:card" content="summary_large_image" />
   </head>
 
   <body>

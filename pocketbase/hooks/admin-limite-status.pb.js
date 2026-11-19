@@ -1,11 +1,12 @@
 // admin-limite-status.pb.js — GET /backend/v1/admin/limite
 //
-// Diagnóstico do limitador de rotas próprias (item 11) e da configuração de
-// proxy confiável (item 1). Mostra o IP visto, os cabeçalhos recebidos, se o
-// trustedProxy está ligado, e a contagem corrente por chave.
+// Diagnóstico do limitador de rotas próprias (revisão externa, item 11).
+// Mostra as linhas de `limite_requisicoes` (chave, contador, início da janela).
+// A coleção é fechada à API; este endpoint é a única leitura, e só para admin.
 //
-// Só admin. Não expõe segredo, mas expõe cabeçalho de requisição — que é dado
-// de quem chamou.
+// POR QUE EXISTE: ao testar a rajada, o limite não devolvia 429 e o hook
+// engolia o erro num catch — sem visibilidade eu não sabia se era permissão,
+// tabela ausente ou lógica. Este endpoint responde isso.
 
 routerAdd(
   'GET',
@@ -20,32 +21,16 @@ routerAdd(
     } catch (_) {}
     if (!admin) return e.json(403, { codigo: 'sem_permissao', mensagem: 'Só o administrador.' })
 
-    let ipReal = ''
-    try {
-      ipReal = String(e.realIP() || '')
-    } catch (_) {}
-    let xff = ''
-    try {
-      xff = String(e.request.header.get('x-forwarded-for') || '')
-    } catch (_) {}
-    let xri = ''
-    try {
-      xri = String(e.request.header.get('x-real-ip') || '')
-    } catch (_) {}
-
-    let tpHeaders = ''
-    let tpAtivo = false
-    try {
-      const st = $app.settings()
-      if (st.trustedProxy && st.trustedProxy.headers && st.trustedProxy.headers.length) {
-        tpHeaders = st.trustedProxy.headers.join(',')
-        tpAtivo = true
-      }
-    } catch (_) {}
-
     const linhas = []
+    let erro = ''
     try {
-      const regs = $app.findRecordsByFilter('limite_requisicoes', "id != ''", '-janela_inicio', 50, 0)
+      const regs = $app.findRecordsByFilter(
+        'limite_requisicoes',
+        "id != ''",
+        '-janela_inicio',
+        50,
+        0,
+      )
       for (let i = 0; i < regs.length; i++) {
         linhas.push({
           chave: regs[i].getString('chave'),
@@ -53,20 +38,33 @@ routerAdd(
           janela_inicio: regs[i].getString('janela_inicio'),
         })
       }
-    } catch (_) {}
+    } catch (err) {
+      erro = err.message
+    }
+
+    // Teste de escrita: prova se o endpoint consegue salvar (permissão).
+    let escritaOk = false
+    let erroEscrita = ''
+    try {
+      const col = $app.findCollectionByNameOrId('limite_requisicoes')
+      const t = new Record(col)
+      t.set('chave', 'teste_diagnostico|' + Date.now())
+      t.set('contador', 1)
+      t.set('janela_inicio', new Date().toISOString())
+      $app.save(t)
+      $app.delete(t)
+      escritaOk = true
+    } catch (errW) {
+      erroEscrita = errW.message
+    }
 
     return e.json(200, {
-      ip_visto_pelo_servidor: ipReal,
-      cabecalhos: { 'x-forwarded-for': xff, 'x-real-ip': xri },
-      trusted_proxy: {
-        ativo: tpAtivo,
-        headers: tpAtivo ? tpHeaders : '',
-        efeito: tpAtivo
-          ? 'IP real em uso: o limite conta por pessoa.'
-          : 'IP do proxy em uso: o limite conta o site inteiro como um cliente só.',
-      },
       total_linhas: linhas.length,
       linhas: linhas,
+      leitura_ok: !erro,
+      erro_leitura: erro,
+      escrita_ok: escritaOk,
+      erro_escrita: erroEscrita,
     })
   },
   $apis.requireAuth(),

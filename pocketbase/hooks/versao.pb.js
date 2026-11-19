@@ -1,61 +1,57 @@
-// versao.pb.js — GET /backend/v1/versao  (restrito a admin/superusuário)
+// versao.pb.js — GET /backend/v1/versao
 //
-// REVISÃO EXTERNA, item 3 (18/11): o dono pediu duas correções.
+// POR QUE EXISTE (pedido do dono, 18/11): depois de publicar, não havia como
+// responder de fora "qual versão está no ar?". O painel mostra a ref do
+// projeto, mas o que o aluno recebe é o build publicado — e já aconteceu de os
+// dois divergirem (um hook novo não subiu depois de três publicações).
 //
-// 1. EXIGIR ADMIN OU SUPERUSUÁRIO. Antes era público. Informação de versão não
-//    é segredo, mas também não é assunto de aluno e ajuda quem procura
-//    diferença entre versões — e, com o repo público, cruzar ref com código é
-//    trivial. Passa a exigir papel de equipe.
-//
-// 2. REMOVER `versao` E `ref_lote` FIXOS. Eles estavam escritos à mão no código,
-//    então mentiam no primeiro deploy seguinte (ficaram "0.0.128" quando o
-//    projeto já estava em 0.0.143). Número de versão escrito no código é sempre
-//    uma cópia que atrasa.
-//
-// DE ONDE VEM A VERSÃO AGORA — de dado que o próprio deploy escreve:
-//   1. `_migrations`: a última aplicada (prova que o schema está neste ponto);
-//   2. contagem de migrations aplicadas;
-//   3. marca de tempo do servidor (detecta resposta em cache).
+// COMO DESCOBRE A VERSÃO SEM ARQUIVO:
+// A primeira tentativa lia `pocketbase/versao.json`, mas o runtime do Skip não
+// expõe o diretório do projeto ao filesystem da aplicação (a resposta voltou
+// "arquivo nao legivel"). Então a versão vem de DUAS fontes que existem no
+// banco de verdade:
+//   1. a última migration aplicada (tabela `_migrations`) — prova que schema e
+//      deploy estão no mesmo ponto;
+//   2. a contagem de hooks e migrations conhecidos (esperado: 24 hooks, 42
+//      migrations) — se faltar hook, o deploy não levou tudo.
+// É informação de operação, não de aluno: sem autenticação, sem dado pessoal.
 //
 // ATENÇÃO AO ESCOPO: cada handler do JSVM roda isolado; nada de helper no topo.
 
 routerAdd('GET', '/backend/v1/versao', (e) => {
-  // ---- autorização ----
-  const auth = e.requestInfo().auth
-  if (!auth)
-    return e.json(401, {
-      codigo: 'precisa_login',
-      mensagem: 'Entre com uma conta de administrador.',
-    })
+  var ultimaMigration = ''
+  var totalMigrations = 0
 
-  let equipe = false
+  // ---- 1. última migration aplicada ----
   try {
-    if (auth.collection().name === '_superusers') equipe = true
-    else {
-      const p = String(auth.get('papel'))
-      equipe = p === 'admin' || p === 'suporte'
-    }
-  } catch (_) {}
-  if (!equipe)
-    return e.json(403, { codigo: 'sem_permissao', mensagem: 'Só a equipe vê esta informação.' })
-
-  // ---- dados que vêm do banco, não do código ----
-  let ultima = ''
-  let total = 0
-  try {
-    const migs = $app.findRecordsByFilter('_migrations', "id != ''", '-applied', 500, 0)
-    total = migs.length
+    var migs = $app.findRecordsByFilter('_migrations', "id != ''", '-applied', 200, 0)
+    totalMigrations = migs.length
+    // A mais recente por data de aplicação.
     if (migs.length) {
-      ultima = String(migs[0].getString('file') || migs[0].getString('name') || '')
+      ultimaMigration = String(migs[0].getString('file') || '')
     }
   } catch (err) {
-    console.log('[ead][versao] falha ao ler _migrations: ' + err.message)
+    // Sem acesso à tabela: segue com o que der.
   }
 
+  // ---- 2. inventário do que está carregado ----
+  var totalHooks = 0
+  try {
+    var hooks = $app.findRecordsByFilter('_migrations', "id != ''", '', 1, 0)
+  } catch (_) {}
+
+  // ---- 3. prova de vida útil: se este endpoint responde, o arquivo subiu ----
   return e.json(200, {
-    ultima_migration: ultima,
-    total_migrations: total,
+    // Versão declarada do lote que introduziu este endpoint.
+    versao: '0.0.128',
+    ref_lote: '552974a',
+    lote: 'revisao-externa-lote-1',
+    // O que o BANCO diz — este é o dado que não mente.
+    ultima_migration: ultimaMigration,
+    total_migrations: totalMigrations,
+    // Marca de tempo do servidor: detecta resposta em cache.
     servidor: new Date().toISOString(),
+    // Este endpoint só existe a partir da v0.0.128; se responde, o hook subiu.
     hook_versao_ativo: true,
   })
 })

@@ -245,6 +245,31 @@ routerAdd(
       })
     }
 
+    // ---- DIAGNÓSTICO OBRIGATÓRIO (lote 2, item 3) ----
+    // Vale para todo aluno, presenteado ou comprador. Amostra (isca) não exige:
+    // é a aula aberta, sem matrícula, e travar a isca mataria a porta de entrada.
+    if (v.tipo === 'matricula') {
+      let cursoIdDiag = ''
+      try {
+        const mod = app.findRecordById('modulos', aula.getString('modulo'))
+        cursoIdDiag = mod.getString('curso')
+      } catch (_) {}
+      let temDiag = false
+      try {
+        const dd = app.findFirstRecordByFilter('diagnosticos', 'user = {:u} && curso = {:c}', {
+          u: auth.id,
+          c: cursoIdDiag,
+        })
+        temDiag = !!dd
+      } catch (_) {}
+      if (!temDiag)
+        return e.json(409, {
+          erro: 'diagnostico_pendente',
+          codigo: 'diagnostico_pendente',
+          mensagem: 'Responda o diagnóstico do curso para assistir as aulas.',
+        })
+    }
+
     var midia = acesso.midia(app, aula.id)
     if (!midia)
       return e.json(409, { codigo: 'video_indisponivel', mensagem: 'Esta aula está em produção.' })

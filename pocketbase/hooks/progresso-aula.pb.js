@@ -150,6 +150,26 @@ routerAdd(
         mensagem: 'Você precisa ter o curso para registrar progresso.',
       })
 
+    // ---- DIAGNÓSTICO OBRIGATÓRIO (lote 2, item 3) ----
+    // Sem diagnóstico no curso, nem progresso nem vídeo. A equipe passa, para
+    // conseguir testar. A trava é AQUI, no servidor — não na tela.
+    if (!ehEquipe && cursoId) {
+      let temDiag = false
+      try {
+        const dd = $app.findFirstRecordByFilter('diagnosticos', 'user = {:u} && curso = {:c}', {
+          u: auth.id,
+          c: cursoId,
+        })
+        temDiag = !!dd
+      } catch (_) {}
+      if (!temDiag)
+        return e.json(409, {
+          erro: 'diagnostico_pendente',
+          codigo: 'diagnostico_pendente',
+          mensagem: 'Responda o diagnóstico do curso para começar as aulas.',
+        })
+    }
+
     let corpo = {}
     try {
       corpo = e.requestInfo().body || {}
@@ -268,6 +288,28 @@ routerAdd(
       for (let i = 0; i < prog.length; i++) set[prog[i].getString('aula')] = true
       for (let i = 0; i < aulasPub.length; i++) if (set[aulasPub[i]]) feitas++
     } catch (_) {}
+
+    // ---- marco CONCLUIU no convite (lote 2, item 2) ----
+    // Só quando o curso inteiro fechou e só na primeira vez. Quem comprou não
+    // tem voucher e nada acontece.
+    if (total > 0 && feitas === total) {
+      try {
+        const emailAluno = String(auth.getString('email') || '').toLowerCase()
+        if (emailAluno) {
+          const vs = $app.findRecordsByFilter('vouchers', 'email_destino = {:e}', '', 5, 0, {
+            e: emailAluno,
+          })
+          for (let i = 0; i < vs.length; i++) {
+            if (!String(vs[i].getString('concluiu_em') || '').trim()) {
+              vs[i].set('concluiu_em', new Date().toISOString())
+              $app.save(vs[i])
+            }
+          }
+        }
+      } catch (errC) {
+        console.log('[ead][progresso] falha ao marcar concluiu_em: ' + errC.message)
+      }
+    }
 
     const restante = alvo - assistidos
     return e.json(200, {

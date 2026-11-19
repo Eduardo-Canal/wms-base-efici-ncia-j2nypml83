@@ -29,19 +29,22 @@ routerAdd(
     // batida porque a resposta 401 do "sem login" acontecia antes da contagem.
     // Um código de voucher é adivinhável por força bruta; o limite só protege
     // se contar toda tentativa, autenticada ou não.
+    // ⚠ UM único bloco de limite. Houve dois (o segundo duplicava a contagem,
+    // e cada tentativa descontava 2 do teto de 10). Não reintroduzir.
+    let ipLim = ''
+    try {
+      ipLim = String(e.realIP() || '')
+    } catch (_) {}
+    const chaveLim = 'voucher_resgatar|' + ipLim
+
     try {
       const agoraMs = Date.now()
       const janelaMs = 60 * 1000
       const LIMITE = 10
-      let ip = ''
-      try {
-        ip = String(e.realIP() || '')
-      } catch (_) {}
-      const chave = 'voucher_resgatar|' + ip
 
       let reg = null
       try {
-        reg = $app.findFirstRecordByFilter('limite_requisicoes', 'chave = {:c}', { c: chave })
+        reg = $app.findFirstRecordByFilter('limite_requisicoes', 'chave = {:c}', { c: chaveLim })
       } catch (_) {}
 
       let contador = 1
@@ -66,7 +69,7 @@ routerAdd(
       if (!reg) {
         const colLim = $app.findCollectionByNameOrId('limite_requisicoes')
         reg = new Record(colLim)
-        reg.set('chave', chave)
+        reg.set('chave', chaveLim)
         reg.set('janela_inicio', new Date().toISOString())
       } else if (contador === 1) {
         reg.set('janela_inicio', new Date().toISOString())
@@ -74,7 +77,9 @@ routerAdd(
       reg.set('contador', contador)
       $app.save(reg)
     } catch (errLim) {
-      console.log('[ead][limite] voucher: ' + errLim.message)
+      // Log com a CAUSA e a chave: sem isso o catch escondia o defeito real
+      // (a revisão externa pediu para não engolir erro em silêncio).
+      console.log('[ead][limite][voucher] ' + errLim.message + ' | chave=' + chaveLim)
     }
 
     // ---- PORTÃO (revisão externa, item 12) ----
@@ -98,65 +103,6 @@ routerAdd(
           mensagem:
             'A área de cursos ainda não está aberta. Entre na sua conta para usar o código.',
         })
-    }
-
-    // ---- LIMITE DE REQUISIÇÕES (revisão externa, item 11) ----
-    // O limitador nativo do PocketBase não cobre rota própria (testado: a
-    // rajada passava). Contagem no banco: 10 tentativas por minuto por IP.
-    // Protege o código do voucher de força bruta — 10 caracteres sem O/0 e I/1
-    // ainda são muitos, mas com 10/min um script levaria anos.
-    try {
-      const agoraMs = Date.now()
-      const janelaMs = 60 * 1000
-      const LIMITE = 10
-      let ip = ''
-      try {
-        ip = String(e.realIP() || '')
-      } catch (_) {}
-      const chave = 'voucher_resgatar|' + ip
-
-      let reg = null
-      try {
-        reg = $app.findFirstRecordByFilter('limite_requisicoes', 'chave = {:c}', { c: chave })
-      } catch (_) {}
-
-      let contador = 1
-      if (reg) {
-        const inicioStr = reg.getString('janela_inicio')
-        let inicio = 0
-        if (inicioStr) {
-          const t = new Date(String(inicioStr).replace(' ', 'T')).getTime()
-          if (!isNaN(t)) inicio = t
-        }
-        if (inicio > 0 && agoraMs - inicio < janelaMs) {
-          contador = reg.getInt('contador') + 1
-        } else {
-          // janela nova
-          contador = 1
-        }
-      }
-
-      if (contador > LIMITE) {
-        return e.json(429, {
-          codigo: 'muitas_tentativas',
-          mensagem: 'Muitas tentativas de resgate. Aguarde um minuto e tente de novo.',
-        })
-      }
-
-      if (!reg) {
-        const colLim = $app.findCollectionByNameOrId('limite_requisicoes')
-        reg = new Record(colLim)
-        reg.set('chave', chave)
-        reg.set('janela_inicio', new Date().toISOString())
-      } else if (contador === 1) {
-        reg.set('janela_inicio', new Date().toISOString())
-      }
-      reg.set('contador', contador)
-      $app.save(reg)
-    } catch (errLim) {
-      // Limite é proteção, não caminho crítico: se a contagem falhar, o
-      // resgate continua (e fica registrado no log).
-      console.log('[ead][limite] falhou: ' + errLim.message)
     }
 
     const auth = e.requestInfo().auth
@@ -444,7 +390,19 @@ routerAdd(
       area: '/ead/minha-area',
     })
   },
-  $apis.requireAuth(),
+  // SEM $apis.requireAuth() — DE PROPÓSITO (revisão externa, itens 1 e 4).
+  //
+  // O middleware `requireAuth` roda ANTES do handler: requisição sem login
+  // recebia 401 do middleware e o handler NUNCA executava, então o limitador
+  // do topo não contava nada. Foi exatamente o que aconteceu no teste: 13
+  // tentativas sem login passaram todas com 401 e nenhuma 429.
+  //
+  // Consequência real: um script anônimo podia martelar a rota sem limite. Ele
+  // leva 401 sempre (não adivinha código), mas consome servidor, e o limite
+  // existia justamente para isso.
+  //
+  // A autenticação continua OBRIGATÓRIA — só que checada DENTRO do handler,
+  // depois da contagem.
 )
 
 // ---------------------------------------------------------------------------

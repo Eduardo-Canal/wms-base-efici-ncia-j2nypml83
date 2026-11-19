@@ -492,3 +492,58 @@ cronAdd('ead_retencao_log', '0 4 * * *', () => {
   if (velhos && velhos.length)
     console.log('[ead][cron] retencao: ' + velhos.length + ' registros removidos')
 })
+
+// ── Retenção do LIMITADOR (19/11, pedido do dono) ──────────────────────────
+// PROBLEMA: `limite_requisicoes` guarda `chave`, e a chave das rotas de entrada
+// contém E-MAIL (`otp_email|<e-mail>|<hora>`) e a de todas contém IP
+// (`...|<ip>`). Sem limpeza, a coleção vira um arquivo de e-mails e IPs de
+// visitantes — dado pessoal guardado para sempre, sem finalidade. Isso é
+// problema de LGPD, não de espaço em disco.
+//
+// A janela útil do limitador é a MAIOR entre as usadas: 1 hora (entrada por
+// código). 24 horas dá folga de sobra e mantém margem para depurar um abuso
+// recente.
+//
+// POR QUE UMA HORA FIXA (4h da manhã) E NÃO A CADA HORA: o volume é baixo e a
+// limpeza é barata; rodar de madrugada evita competir com requisição de aluno.
+cronAdd('ead_retencao_limite', '15 4 * * *', () => {
+  var app = $app
+  var corteMs = Date.now() - 24 * 60 * 60 * 1000
+  var corte = new Date(corteMs).toISOString()
+
+  var velhos = []
+  try {
+    velhos = app.findRecordsByFilter('limite_requisicoes', 'janela_inicio < {:c}', '', 500, 0, {
+      c: corte,
+    })
+  } catch (e) {
+    console.log('[ead][cron] falha ao listar limite antigo: ' + e.message)
+    return
+  }
+
+  var removidos = 0
+  for (var i = 0; i < (velhos || []).length; i++) {
+    try {
+      app.delete(velhos[i])
+      removidos++
+    } catch (e2) {
+      /* segue: uma linha travada não pode parar a limpeza */
+    }
+  }
+
+  // Se bateu o teto de 500, avisa que sobrou — sinal de que a janela precisa
+  // encurtar ou o lote aumentar.
+  var restaram = 0
+  try {
+    restaram = app.findRecordsByFilter('limite_requisicoes', 'janela_inicio < {:c}', '', 1, 0, {
+      c: corte,
+    }).length
+  } catch (_) {}
+
+  console.log(
+    '[ead][cron] retencao limite: ' +
+      removidos +
+      ' removidos' +
+      (restaram ? ' (ainda ha >500)' : ''),
+  )
+})

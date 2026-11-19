@@ -74,7 +74,9 @@ routerAdd(
       reg.set('contador', contador)
       $app.save(reg)
     } catch (errLim) {
-      console.log('[ead][limite] voucher: ' + errLim.message)
+      // Log com a CAUSA e a chave: sem isso o catch escondia o defeito real
+      // (a revisão externa pediu para não engolir erro em silêncio).
+      console.log('[ead][limite][voucher] ' + errLim.message + ' | chave=' + chave)
     }
 
     // ---- PORTÃO (revisão externa, item 12) ----
@@ -385,7 +387,19 @@ routerAdd(
       area: '/ead/minha-area',
     })
   },
-  $apis.requireAuth(),
+  // SEM $apis.requireAuth() — DE PROPÓSITO (revisão externa, itens 1 e 4).
+  //
+  // O middleware `requireAuth` roda ANTES do handler: requisição sem login
+  // recebia 401 do middleware e o handler NUNCA executava, então o limitador
+  // do topo não contava nada. Foi exatamente o que aconteceu no teste: 13
+  // tentativas sem login passaram todas com 401 e nenhuma 429.
+  //
+  // Consequência real: um script anônimo podia martelar a rota sem limite. Ele
+  // leva 401 sempre (não adivinha código), mas consome servidor, e o limite
+  // existia justamente para isso.
+  //
+  // A autenticação continua OBRIGATÓRIA — só que checada DENTRO do handler,
+  // depois da contagem.
 )
 
 // ---------------------------------------------------------------------------

@@ -68,6 +68,93 @@ export interface Playback {
   material?: string
   pergunta_fixacao?: string
   tipo_acesso: 'matricula' | 'amostra'
+  // Só sinaliza que existe PDF; o link sai por /material, que checa matrícula.
+  tem_material?: boolean
+}
+
+// ---- LOTE 2: fluxo do presente (convite, diagnóstico, pré-diagnóstico) ----
+export interface Presente {
+  nome_lead: string
+  email_destino: string
+  recado: string
+  curso: { titulo: string; capa: string; modulos: number; aulas: number }
+  so_este_email: boolean
+}
+
+export interface Dor {
+  id: string
+  nome: string
+}
+
+export interface DiagnosticoDados {
+  tipo_operacao: string
+  controle_atual: string
+  dores: string[]
+  papel: string
+  porte: string
+  aceite_contato: boolean
+  aceite_contato_em: string
+  aceite_texto_versao: string
+}
+
+export interface DiagnosticoResposta {
+  existe: boolean
+  curso: string
+  diagnostico?: DiagnosticoDados
+  dores: Dor[]
+}
+
+export interface PreDiagnosticoSnapshot {
+  perfil: {
+    tipo_operacao: string
+    controle_atual: string
+    papel: string
+    porte: string
+    dores: string[]
+  }
+  nivel: { valor: number; texto: string }
+  pontos_de_atencao: Array<{
+    dor: string
+    texto: string
+    aula_base: {
+      slug: string
+      titulo: string
+      numero: string
+      porta_entrada: boolean
+      concluida: boolean
+    } | null
+  }>
+  proximo_passo: string
+  momento: string
+  prazo: string
+  montado_em: string
+}
+
+export interface PreDiagnostico {
+  codigo: string
+  momento: string
+  prazo: string
+  nivel: number
+  snapshot: PreDiagnosticoSnapshot
+  enviar_anotacoes: boolean
+  aprofundamento_em: string
+}
+
+export interface CursoEmBreve {
+  id: string
+  slug: string
+  titulo: string
+  descricao_curta: string
+  aulas_previstas: number
+  status: string
+}
+
+// Módulo na vitrine do convite: só título e contagem, sem aula nem slug.
+export interface ModuloPresente {
+  id: string
+  titulo: string
+  ordem: number
+  aulas: number
 }
 
 // ---- painel do administrador ----
@@ -402,6 +489,176 @@ export const api = {
     return { modulos: mods.items ?? [], aulas: aulas.items ?? [] }
   },
 
+  // ---- LOTE 2: matrículas do aluno ----
+  // A coleção `matriculas` tem listRule por usuário, então o próprio aluno lê.
+  // Usado pela Minha área para saber qual curso abrir.
+  async minhasMatriculas(): Promise<Array<{ id: string; curso_slug: string; status: string }>> {
+    const r = await pedir<{
+      items: Array<{ id: string; status: string; expand?: { curso?: { slug: string } } }>
+    }>(
+      '/api/collections/matriculas/records?perPage=20&sort=-created&expand=curso&filter=' +
+        encodeURIComponent(`status='ativa'`),
+    )
+    return (r.items ?? [])
+      .map((m) => ({
+        id: m.id,
+        status: m.status,
+        curso_slug: m.expand?.curso?.slug ?? '',
+      }))
+      .filter((m) => !!m.curso_slug)
+  },
+
+  // Lê o perfil gravado no login (sem chamada de rede).
+  async carregarPerfil(): Promise<{ name?: string; email?: string } | null> {
+    try {
+      const cru = localStorage.getItem('ead_perfil')
+      return cru ? JSON.parse(cru) : null
+    } catch {
+      return null
+    }
+  },
+
+  // ---- LOTE 2: apoio ao player ----
+
+  // Descobre o curso de uma aula. Usado quando o servidor responde 409
+  // diagnostico_pendente: a tela precisa saber PARA ONDE mandar o aluno.
+  async aulaCursoSlug(aulaSlug: string): Promise<string> {
+    // A aula carrega `modulo`; o módulo carrega `curso`. Duas consultas, mas
+    // nenhuma rota nova: as coleções são públicas para quem está logado.
+    const a = await pedir<{ items: Array<{ modulo: string }> }>(
+      '/api/collections/aulas/records?perPage=1&fields=modulo&filter=' +
+        encodeURIComponent(`slug='${aulaSlug.replace(/'/g, '')}'`),
+    )
+    const moduloId = a.items?.[0]?.modulo
+    if (!moduloId) throw new Error('aula sem módulo')
+    const m = await pedir<{ items: Array<{ curso: string }> }>(
+      `/api/collections/modulos/records?perPage=1&fields=curso&filter=${encodeURIComponent(`id='${moduloId}'`)}`,
+    )
+    const cursoId = m.items?.[0]?.curso
+    if (!cursoId) throw new Error('módulo sem curso')
+    const c = await pedir<{ items: Array<{ slug: string }> }>(
+      `/api/collections/cursos/records?perPage=1&fields=slug&filter=${encodeURIComponent(`id='${cursoId}'`)}`,
+    )
+    const s = c.items?.[0]?.slug
+    if (!s) throw new Error('curso sem slug')
+    return s
+  },
+
+  // Aulas e módulos do curso da aula, com a posição salva desta aula.
+  async aulasDoModulo(aulaSlug: string): Promise<{
+    aulas: Aula[]
+    modulos: Modulo[]
+    posicao_seg: number
+  }> {
+    const cursoSlug = await api.aulaCursoSlug(aulaSlug)
+    const curso = await api.cursoPorSlug(cursoSlug)
+    if (!curso) return { aulas: [], modulos: [], posicao_seg: 0 }
+    const { modulos } = await api.estruturaDoCurso(curso.id)
+    const todas = await pedir<{ items: Aula[] }>(
+      '/api/collections/aulas/records?perPage=500&sort=ordem&filter=' +
+        encodeURIComponent('publicado=true'),
+    )
+    const ids = new Set(modulos.map((m) => m.id))
+    const aulas = (todas.items ?? []).filter((a) => ids.has(a.modulo))
+    let posicao_seg = 0
+    try {
+      const p = await pedir<{ items: Array<{ posicao_seg: number }> }>(
+        '/api/collections/progresso_aulas/records?perPage=1&fields=posicao_seg&filter=' +
+          encodeURIComponent(`aula.slug='${aulaSlug.replace(/'/g, '')}'`),
+      )
+      posicao_seg = Number(p.items?.[0]?.posicao_seg ?? 0) || 0
+    } catch {
+      /* sem progresso anterior */
+    }
+    return { aulas, modulos, posicao_seg }
+  },
+
+  // Quantas anotações o aluno tem no curso (a tela de conclusão mostra
+  // "você respondeu N das M perguntas").
+  async contarAnotacoes(cursoSlug: string): Promise<{ total: number }> {
+    try {
+      const curso = await api.cursoPorSlug(cursoSlug)
+      if (!curso) return { total: 0 }
+      const { modulos } = await api.estruturaDoCurso(curso.id)
+      const ids = new Set(modulos.map((m) => m.id))
+      const aulas = await pedir<{ items: Array<{ id: string; modulo: string }> }>(
+        '/api/collections/aulas/records?perPage=500&fields=id,modulo&filter=' +
+          encodeURIComponent('publicado=true'),
+      )
+      const doCurso = new Set((aulas.items ?? []).filter((a) => ids.has(a.modulo)).map((a) => a.id))
+      const resp = await pedir<{ items: Array<{ aula: string }> }>(
+        '/api/collections/respostas_fixacao/records?perPage=500&fields=aula',
+      )
+      const total = (resp.items ?? []).filter((r) => doCurso.has(r.aula)).length
+      return { total }
+    } catch {
+      return { total: 0 }
+    }
+  },
+
+  // Anotações do curso com a pergunta de cada aula (para o PDF).
+  async anotacoesDoCurso(cursoSlug: string): Promise<{
+    curso_titulo: string
+    anotacoes: Array<{ numero: string; titulo: string; pergunta: string; resposta: string }>
+  }> {
+    const curso = await api.cursoPorSlug(cursoSlug)
+    if (!curso) return { curso_titulo: '', anotacoes: [] }
+    const { modulos } = await api.estruturaDoCurso(curso.id)
+    const ids = new Set(modulos.map((m) => m.id))
+    const todas = await pedir<{
+      items: Array<{
+        id: string
+        modulo: string
+        numero: string
+        titulo: string
+        pergunta_fixacao: string
+        ordem: number
+      }>
+    }>(
+      '/api/collections/aulas/records?perPage=500&sort=ordem&filter=' +
+        encodeURIComponent('publicado=true'),
+    )
+    const doCurso = new Map(
+      (todas.items ?? []).filter((a) => ids.has(a.modulo)).map((a) => [a.id, a] as const),
+    )
+    const resp = await pedir<{ items: Array<{ aula: string; texto: string }> }>(
+      '/api/collections/respostas_fixacao/records?perPage=500',
+    )
+    const anotacoes = (resp.items ?? [])
+      .filter((r) => doCurso.has(r.aula))
+      .map((r) => {
+        const a = doCurso.get(r.aula)!
+        return {
+          numero: a.numero,
+          titulo: a.titulo,
+          pergunta: a.pergunta_fixacao || '',
+          resposta: r.texto,
+        }
+      })
+      .sort(
+        (x, y) =>
+          Number(
+            doCurso.get(
+              (resp.items ?? []).find((i) => doCurso.get(i.aula)?.numero === x.numero)?.aula || '',
+            )?.ordem ?? 0,
+          ) - 0,
+      )
+    return { curso_titulo: curso.titulo, anotacoes }
+  },
+
+  // Resposta do "Para fixar" já salva.
+  async minhaRespostaFixacao(aulaSlug: string): Promise<{ texto: string } | null> {
+    try {
+      const r = await pedir<{ items: Array<{ texto: string }> }>(
+        '/api/collections/respostas_fixacao/records?perPage=1&fields=texto&filter=' +
+          encodeURIComponent(`aula.slug='${aulaSlug.replace(/'/g, '')}'`),
+      )
+      return r.items?.[0] ?? null
+    } catch {
+      return null
+    }
+  },
+
   // ---- player ----
   // Amostra e sem login abre pelo endpoint público; o resto exige login.
   async playback(slug: string, amostra: boolean): Promise<Playback> {
@@ -514,8 +771,28 @@ export const api = {
       carga_horas: number
       assinante_nome: string
       assinante_cargo: string
+      // A rubrica NÃO vem mais daqui (item 14 do lote 1): a validação pública
+      // mostra os dados do certificado e só sinaliza que existe assinatura.
+      tem_assinatura?: boolean
       emitido_em: string
     }>(`/backend/v1/certificado/${encodeURIComponent(codigo)}`)
+  },
+
+  // Imagem da rubrica para um certificado emitido.
+  // Endpoint próprio que confere o certificado — a coleção `rubricas` é fechada
+  // e o arquivo em `cursos` foi limpo pela migration 0061.
+  async rubricaDoCertificado(codigo: string): Promise<Blob | null> {
+    try {
+      const base = (import.meta.env.VITE_EAD_API_BASE as string | undefined) ?? ''
+      const r = await fetch(
+        `${base}/backend/v1/certificado/${encodeURIComponent(codigo)}/rubrica`,
+        { headers: getToken() ? { Authorization: getToken() } : {} },
+      )
+      if (!r.ok) return null
+      return await r.blob()
+    } catch {
+      return null
+    }
   },
 
   // ---- admin: capítulo e certificado ----
@@ -557,6 +834,18 @@ export const api = {
   // ---- criar / editar CURSO (pedido do dono, 17/11) ----
   // Slug do curso é gerado no servidor a partir do título: slug digitado à mão
   // colide e vira URL de venda que não pode mais mudar.
+  // TEMPORÁRIO (19/11): lê o IP que o servidor vê. Existe para o dono provar
+  // que o limitador distingue pessoas, chamando de duas redes. Sai junto com o
+  // cartão DiagnosticoIp e com o endpoint diag-ip.pb.js.
+  async diagIp(): Promise<{
+    ip_visto: string
+    ip_hash_curto: string
+    cabecalhos_recebidos: { 'x-forwarded-for': string; 'x-real-ip': string }
+    trusted_proxy: { ativo: boolean; headers: string; efeito: string }
+  }> {
+    return pedir('/backend/v1/diag/ip')
+  },
+
   async adminSalvarCurso(dados: {
     id?: string
     titulo: string
@@ -664,6 +953,152 @@ function normalizarUser(r: any): Sessao['user'] {
     name: r.name ?? '',
     papel: (r.papel as Papel) || 'aluno',
   }
+}
+
+// ---- LOTE 2: rotas do fluxo do presente ----
+// Fica FORA do objeto `api` de propósito: são rotas novas do lote 2 e mantê-las
+// separadas deixa claro o que é do fluxo antigo e o que é do convite.
+export const apiLote2 = {
+  async pedirCodigo(nome: string, email: string): Promise<{ otpId: string }> {
+    return pedir('/backend/v1/ead/entrar/codigo', {
+      method: 'POST',
+      body: JSON.stringify({ nome, email }),
+    })
+  },
+
+  async presente(codigo: string): Promise<Presente> {
+    return pedir(`/backend/v1/ead/presente/${encodeURIComponent(codigo)}`)
+  },
+
+  // Módulos e contagem de aulas para a vitrine do convite (rota pública).
+  // URL SEM aninhamento de propósito: `/presente/{codigo}/estrutura` era
+  // capturada pelo handler de `/presente/{codigo}` e dava 404 sempre
+  // (confirmado no log de requests). Ver o comentário do hook.
+  async estruturaPresente(codigo: string): Promise<{ modulos: ModuloPresente[] }> {
+    return pedir(`/backend/v1/ead/presente-estrutura/${encodeURIComponent(codigo)}`)
+  },
+
+  async resgatarPresente(
+    codigo: string,
+  ): Promise<{ ok: boolean; ja_tinha: boolean; curso: { slug: string; titulo: string } }> {
+    return pedir(`/backend/v1/ead/presente/${encodeURIComponent(codigo)}/resgatar`, {
+      method: 'POST',
+    })
+  },
+
+  async diagnostico(cursoSlug: string): Promise<DiagnosticoResposta> {
+    return pedir(`/backend/v1/ead/diagnostico?curso=${encodeURIComponent(cursoSlug)}`)
+  },
+
+  async salvarDiagnostico(dados: {
+    curso: string
+    tipo_operacao: string
+    controle_atual: string
+    dores: string[]
+    papel?: string
+    porte?: string
+    aceite_contato?: boolean
+    aceite_texto_versao?: string
+  }): Promise<{ ok: boolean; novo: boolean }> {
+    return pedir('/backend/v1/ead/diagnostico', {
+      method: 'POST',
+      body: JSON.stringify(dados),
+    })
+  },
+
+  async dores(cursoSlug: string): Promise<{ total: number; dores: Dor[] }> {
+    return pedir(`/backend/v1/ead/dores?curso=${encodeURIComponent(cursoSlug)}`)
+  },
+
+  // Aula recomendada para uma dor no curso (o aviso laranja do diagnóstico).
+  async aulaDaDor(
+    dorId: string,
+    cursoSlug: string,
+  ): Promise<{
+    encontrada: boolean
+    dor: string
+    mensagem?: string
+    aula?: { slug: string; numero: string; titulo: string; modulo: string; porta_entrada: boolean }
+  }> {
+    return pedir(
+      `/backend/v1/ead/dores/${encodeURIComponent(dorId)}/aula?curso=${encodeURIComponent(cursoSlug)}`,
+    )
+  },
+
+  async salvarFixacao(aulaSlug: string, texto: string): Promise<{ ok: boolean; novo: boolean }> {
+    return pedir('/backend/v1/ead/resposta-fixacao', {
+      method: 'POST',
+      body: JSON.stringify({ aula: aulaSlug, texto }),
+    })
+  },
+
+  async prediagnostico(
+    cursoSlug: string,
+  ): Promise<{ existe: boolean; curso: string; prediagnostico?: PreDiagnostico }> {
+    return pedir(`/backend/v1/ead/prediagnostico?curso=${encodeURIComponent(cursoSlug)}`)
+  },
+
+  async montarPrediagnostico(dados: {
+    curso: string
+    momento: string
+    prazo: string
+  }): Promise<{ ok: boolean; codigo: string; nivel: number; snapshot: PreDiagnosticoSnapshot }> {
+    return pedir('/backend/v1/ead/prediagnostico', {
+      method: 'POST',
+      body: JSON.stringify(dados),
+    })
+  },
+
+  async aprofundar(
+    codigo: string,
+    enviarAnotacoes: boolean,
+  ): Promise<{ ok: boolean; url: string }> {
+    return pedir(`/backend/v1/ead/prediagnostico/${encodeURIComponent(codigo)}/aprofundar`, {
+      method: 'POST',
+      body: JSON.stringify({ enviar_anotacoes: enviarAnotacoes }),
+    })
+  },
+
+  async avisarLancamento(slug: string): Promise<{ ok: boolean; ja_avisado: boolean }> {
+    return pedir(`/backend/v1/ead/cursos/${encodeURIComponent(slug)}/avisar`, { method: 'POST' })
+  },
+
+  async cursosEmBreve(): Promise<CursoEmBreve[]> {
+    const r = await pedir<{ items: CursoEmBreve[] }>(
+      '/api/collections/cursos/records?perPage=20&sort=ordem&filter=' +
+        encodeURIComponent('status="em_breve"'),
+    )
+    return r.items ?? []
+  },
+
+  async adminPresentes(): Promise<{
+    total: number
+    presentes: Array<Record<string, unknown>>
+    media_dias_ate_aprofundamento: number | null
+  }> {
+    return pedir('/backend/v1/ead/admin/presentes')
+  },
+
+  async adminPrediagnostico(codigo: string): Promise<Record<string, unknown>> {
+    return pedir(`/backend/v1/ead/admin/prediagnostico/${encodeURIComponent(codigo)}`)
+  },
+}
+
+// Entrada por código (OTP) — usada pelo CartaoAcesso no convite e em /ead/entrar.
+//
+// POR QUE AQUI E NÃO CHAMANDO A API DO POCKETBASE DIRETO NA TELA: este é o único
+// lugar que grava o token e dispara `ead:sessao`. Se a tela gravasse o token por
+// conta própria, o hook de sessão não acordaria e a pessoa entraria continuando
+// "deslogada" — foi o defeito que o comentário de setToken() descreve.
+export async function authWithCodigo(otpId: string, codigo: string): Promise<Sessao> {
+  const r = await pedir<{ token: string; record: any }>('/api/collections/users/auth-with-otp', {
+    method: 'POST',
+    body: JSON.stringify({ otpId, password: codigo }),
+  })
+  const s: Sessao = { token: r.token, user: normalizarUser(r.record) }
+  guardarPerfil(s.user)
+  setToken(r.token)
+  return s
 }
 
 // Centavos → "R$ 197,00". Preço 0 nunca vira "Grátis": é preço não definido.

@@ -397,28 +397,26 @@ routerAdd('GET', '/backend/v1/certificado/{codigo}', (e) => {
   // e não ajuda a descobrir códigos válidos por tentativa.
   if (!c) return e.json(404, { valido: false, mensagem: 'Certificado não encontrado.' })
 
-  // Rubrica: o certificado guarda o NOME do arquivo; a imagem está no curso.
-  // URL ABSOLUTA do BACKEND: /api/files não é roteado pelo domínio do site
-  // (medido em 16/11 — devolve 404 em HTML e a imagem aparece quebrada).
+  // ── RUBRICA NA PÁGINA PÚBLICA: NÃO SAI (item 14 do lote 1) ──────────────
+  // Antes esta rota devolvia a URL do arquivo em `cursos`, servida por
+  // /api/files sem checagem — qualquer visitante baixava a assinatura do dono.
+  //
+  // Decisão do dono para a validação pública: os dados do certificado bastam
+  // (código, nome, curso, data). A rubrica é ornamento do dono, não prova de
+  // autenticidade — quem prova é o código.
+  //
+  // A imagem continua existindo para o ALUNO, em
+  // /backend/v1/certificado/{codigo}/rubrica, que confere quem pede.
+  // Aqui devolvemos só um sinalizador, sem URL.
   let assinaturaUrl = ''
+  let temAssinatura = false
   try {
-    const arq = String(c.getString('assinatura_arquivo') || '').trim()
-    if (arq) {
-      const curso = $app.findRecordById('cursos', c.getString('curso'))
-      let host = ''
-      try {
-        host = String($secrets.get('EAD_API_PUBLICA', '') || '')
-      } catch (_) {}
-      if (!host) host = 'https://wms-base-eficiencia-c56b6.shrd01.internal.goskip.dev'
-      assinaturaUrl =
-        host +
-        '/api/files/' +
-        curso.collection().id +
-        '/' +
-        curso.id +
-        '/' +
-        encodeURIComponent(arq)
-    }
+    const curso = $app.findRecordById('cursos', c.getString('curso'))
+    let rub = null
+    try {
+      rub = $app.findFirstRecordByFilter('rubricas', 'curso = {:c}', { c: curso.id })
+    } catch (_) {}
+    temAssinatura = !!(rub && String(rub.getString('imagem') || '').trim())
   } catch (_) {}
 
   // Devolve só o necessário para conferência. Nada de e-mail, id de usuário
@@ -440,7 +438,8 @@ routerAdd('GET', '/backend/v1/certificado/{codigo}', (e) => {
     carga_horas: c.getInt('carga_horas'),
     assinante_nome: c.getString('assinante_nome'),
     assinante_cargo: c.getString('assinante_cargo'),
-    assinatura_url: assinaturaUrl,
+    // Sem URL de imagem: a validação pública não entrega a rubrica.
+    tem_assinatura: temAssinatura,
     emitido_em: c.getString('emitido_em'),
   })
 })

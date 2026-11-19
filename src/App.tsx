@@ -20,6 +20,11 @@ import Admin from './ead/telas/Admin'
 import ResetSenha from './ead/telas/ResetSenha'
 import Voucher from './ead/telas/Voucher'
 import Certificado from './ead/telas/Certificado'
+// LOTE 2 — fluxo do presente
+import Convite from './ead/telas/Convite'
+import Diagnostico from './ead/telas/Diagnostico'
+import Conclusao from './ead/telas/Conclusao'
+import Impressao from './ead/telas/Impressao'
 import { useSessao } from './ead/useSessao'
 
 const EadRoutes = () => {
@@ -42,6 +47,14 @@ const EadRoutes = () => {
       <Route path="/ead/comprar" element={<Comprar />} />
       <Route path="/ead/obrigado" element={<Obrigado />} />
       <Route path="/ead/aula/:slug" element={<Player />} />
+
+      {/* LOTE 2 — fluxo do presente. As rotas específicas vêm ANTES de
+          /ead/:cursoSlug, senão o parâmetro capturaria "diagnostico" e
+          "conclusao" como se fossem nomes de curso. */}
+      <Route path="/ead/:cursoSlug/diagnostico" element={<Diagnostico />} />
+      <Route path="/ead/:cursoSlug/conclusao" element={<Conclusao />} />
+      <Route path="/ead/imprimir/:tipo/:chave" element={<Impressao />} />
+
       {/* o curso é o último: /ead/:cursoSlug capturaria as rotas acima */}
       <Route path="/ead/:cursoSlug" element={<Curso />} />
     </>
@@ -60,6 +73,9 @@ const App = () => (
           <Route path="/blog/:slug" element={<BlogPost />} />
           {EadRoutes()}
         </Route>
+        {/* Convite é PÚBLICO e fica FORA do Layout: quem recebe o link não deve
+            ver o menu do site por cima da proposta do presente. */}
+        <Route path="/presente/:codigo" element={<Convite />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </TooltipProvider>

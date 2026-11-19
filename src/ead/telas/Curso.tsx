@@ -25,6 +25,10 @@ export default function Curso() {
   const [estado, setEstado] = useState<'carregando' | 'ok' | 'nao_encontrado' | 'erro'>(
     'carregando',
   )
+  // LOTE 2, item 8: aluno com matrícula vê "Continuar o curso", não comprar.
+  const [temMatricula, setTemMatricula] = useState(false)
+  // Carga horária vem do CADASTRO (cursos.carga_min), nunca escrita na tela.
+  const [cargaHoras, setCargaHoras] = useState<number | null>(null)
 
   useEffect(() => {
     let vivo = true
@@ -40,6 +44,15 @@ export default function Curso() {
         const doCurso = new Set(ms.map((m) => m.id))
         setModulos([...ms].sort((a, b) => a.ordem - b.ordem))
         setAulas(as.filter((a) => doCurso.has(a.modulo)).sort((a, b) => a.ordem - b.ordem))
+
+        // Matrícula ativa neste curso? Decide compra x continuar.
+        const mats = await api.minhasMatriculas().catch(() => [])
+        if (vivo) setTemMatricula(mats.some((m) => m.curso_slug === c.slug))
+
+        // Carga horária (minutos no cadastro → horas na tela).
+        if (vivo && typeof c.carga_min === 'number' && c.carga_min > 0) {
+          setCargaHoras(Math.max(1, Math.round((c.carga_min / 60) * 10) / 10))
+        }
 
         const prods = await api.produtos()
         const deste = prods.find((p) => p.ativo && p.cursos.includes(c.id))
@@ -95,6 +108,14 @@ export default function Curso() {
       <p className="mt-3 text-sm text-muted-foreground">
         {aulas.length} aulas{totalSeg > 0 && ` · ${duracaoBR(totalSeg)} de vídeo`}
       </p>
+      {/* Carga horária do CADASTRO. "Vídeos e exercícios de fixação" é o que
+          justifica 2 h num curso que soma ~1,3 h de vídeo — sem essa linha a
+          diferença vira dúvida do aluno. */}
+      {cargaHoras !== null && (
+        <p className="mt-1 text-sm text-muted-foreground">
+          Carga horária: {cargaHoras} h (vídeos e exercícios de fixação)
+        </p>
+      )}
 
       {curso!.resultado_esperado && (
         <div className="mt-6 rounded-lg bg-muted p-4">
@@ -155,7 +176,17 @@ export default function Curso() {
 
       <div className="fixed inset-x-0 bottom-0 border-t bg-background/95 px-4 py-4 backdrop-blur">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3">
-          {temPreco ? (
+          {/* ITEM 8: quem já tem matrícula NÃO vê botão de compra. Oferecer
+              compra a quem já comprou é o tipo de tela que faz o cliente
+              abrir suporte. */}
+          {temMatricula ? (
+            <>
+              <p className="text-sm text-muted-foreground">Você já tem acesso a este curso.</p>
+              <Button asChild size="lg">
+                <Link to="/ead/minha-area">Continuar o curso</Link>
+              </Button>
+            </>
+          ) : temPreco ? (
             <>
               <span className="text-xl font-semibold">{precoBR(produto!.preco_centavos)}</span>
               <Button asChild size="lg">

@@ -7,6 +7,12 @@
 //
 // POR QUE FORA DE /ead: precisa funcionar sem login e sem a área liberada. É o
 // mesmo motivo do /reset-password.
+//
+// ── A RUBRICA NÃO APARECE AQUI (item 14 do lote 1) ────────────────────────
+// A assinatura do Eduardo é dado pessoal dele e esta página é aberta a quem
+// tiver o link. O que prova o certificado é o CÓDIGO, não o desenho da
+// assinatura. A imagem continua disponível para o aluno, na tela de conclusão,
+// por um endpoint que confere o certificado.
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api'
@@ -21,41 +27,8 @@ type Dados = {
   carga_horas: number
   assinante_nome: string
   assinante_cargo: string
-  assinatura_url?: string
+  tem_assinatura?: boolean
   emitido_em: string
-}
-
-// A rubrica vive no backend (outro host). <img src="https://outro-host/...">
-// depende de CORS e de a CSP do arquivo permitir — e num teste de 16/11 a
-// imagem não renderizou, apesar de o arquivo responder 200 image/png.
-// Aqui baixamos o arquivo e usamos um blob: URL, que é da própria origem da
-// página e não depende de política nenhuma. Se falhar, o nome digitado do
-// assinante continua aparecendo — o certificado nunca fica quebrado.
-function useRubrica(url?: string): string {
-  const [src, setSrc] = useState('')
-  useEffect(() => {
-    if (!url) return
-    let vivo = true
-    fetch(url)
-      .then((r) => (r.ok ? r.blob() : Promise.reject(new Error('sem arquivo'))))
-      .then((b) => {
-        if (vivo) setSrc(URL.createObjectURL(b))
-      })
-      .catch(() => {
-        /* sem rubrica: o nome assinado já basta */
-      })
-    return () => {
-      vivo = false
-    }
-  }, [url])
-  return src
-}
-
-// Renderiza a rubrica já baixada como blob (ver useRubrica acima).
-function Rubrica({ url, nome }: { url?: string; nome: string }) {
-  const src = useRubrica(url)
-  if (!src) return null
-  return <img src={src} alt={`Assinatura de ${nome}`} className="mb-1 h-14 object-contain" />
 }
 
 export default function Certificado() {
@@ -68,7 +41,7 @@ export default function Certificado() {
     api
       .verificarCertificado(codigo)
       .then((r) => {
-        setDados(r)
+        setDados(r as Dados)
         setEstado('ok')
       })
       .catch(() => setEstado('invalido'))
@@ -118,7 +91,9 @@ export default function Certificado() {
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">Carga horária</dt>
-              <dd className="font-medium">{dados.carga_horas} horas</dd>
+              <dd className="font-medium">
+                {dados.carga_horas > 0 ? `${dados.carga_horas} horas` : '—'}
+              </dd>
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">Emitido em</dt>
@@ -127,11 +102,8 @@ export default function Certificado() {
             {dados.assinante_nome && (
               <div>
                 <dt className="text-xs text-muted-foreground">Assinado por</dt>
+                {/* Só nome e cargo. A rubrica não sai na página pública. */}
                 <dd className="font-medium">
-                  {/* A rubrica vem do curso e é vinculada na emissão. Sem ela,
-                      o nome digitado continua valendo — o certificado não fica
-                      quebrado quando não há imagem. */}
-                  <Rubrica url={dados.assinatura_url} nome={dados.assinante_nome} />
                   {dados.assinante_nome}
                   {dados.assinante_cargo ? ` — ${dados.assinante_cargo}` : ''}
                 </dd>

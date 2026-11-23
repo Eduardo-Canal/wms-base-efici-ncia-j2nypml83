@@ -493,19 +493,33 @@ export const api = {
   // A coleção `matriculas` tem listRule por usuário, então o próprio aluno lê.
   // Usado pela Minha área para saber qual curso abrir.
   async minhasMatriculas(): Promise<Array<{ id: string; curso_slug: string; status: string }>> {
-    const r = await pedir<{
-      items: Array<{ id: string; status: string; expand?: { curso?: { slug: string } } }>
-    }>(
-      '/api/collections/matriculas/records?perPage=20&sort=-created&expand=curso&filter=' +
-        encodeURIComponent(`status='ativa'`),
-    )
-    return (r.items ?? [])
-      .map((m) => ({
-        id: m.id,
-        status: m.status,
-        curso_slug: m.expand?.curso?.slug ?? '',
-      }))
-      .filter((m) => !!m.curso_slug)
+    // ⚠ DEFEITO CORRIGIDO (20/11): `sort=-created` não existe em `matriculas`.
+    // O campo de data desta coleção é `criado_em` (autodate). O PocketBase
+    // responde 400 "Something went wrong" — e como esta chamada não tinha
+    // `.catch`, o 400 derrubava a MINHA ÁREA INTEIRA com "Algo saiu errado",
+    // exatamente na primeira tela que o aluno vê ao entrar.
+    //
+    // Duas correções em uma: o sort certo e a chamada não-fatal. Sem matrícula
+    // é um estado VÁLIDO (a tela tem o estado vazio); erro de rede também. Em
+    // nenhum dos dois a resposta certa é derrubar a página.
+    try {
+      const r = await pedir<{
+        items: Array<{ id: string; status: string; expand?: { curso?: { slug: string } } }>
+      }>(
+        '/api/collections/matriculas/records?perPage=20&sort=-criado_em&expand=curso&filter=' +
+          encodeURIComponent(`status='ativa'`),
+      )
+      return (r.items ?? [])
+        .map((m) => ({
+          id: m.id,
+          status: m.status,
+          curso_slug: m.expand?.curso?.slug ?? '',
+        }))
+        .filter((m) => !!m.curso_slug)
+    } catch {
+      // 400 de filtro, 403 de portão ou rede: a tela decide o estado vazio.
+      return []
+    }
   },
 
   // Lê o perfil gravado no login (sem chamada de rede).
@@ -976,6 +990,39 @@ export const apiLote2 = {
   // (confirmado no log de requests). Ver o comentário do hook.
   async estruturaPresente(codigo: string): Promise<{ modulos: ModuloPresente[] }> {
     return pedir(`/backend/v1/ead/presente-estrutura/${encodeURIComponent(codigo)}`)
+  },
+
+  // Vitrine do curso (cenário das iscas, aprovado 20/11).
+  // Público: devolve o curso, os módulos e SÓ o conteúdo da aula liberada.
+  // Aula paga chega com `liberada: false` e SEM título/slug — o cadeado é
+  // montado na tela e leva para a compra.
+  async vitrine(cursoSlug: string): Promise<{
+    curso: {
+      id: string
+      slug: string
+      titulo: string
+      resumo: string
+      resultado: string
+      descricao: string
+      carga_min: number
+    }
+    modulos: Array<{ id: string; titulo: string; ordem: number }>
+    aulas: Array<{
+      id: string
+      modulo: string
+      numero: string
+      ordem: number
+      duracao_seg: number
+      amostra: boolean
+      liberada: boolean
+      slug?: string
+      titulo?: string
+    }>
+    total_aulas: number
+    total_seg: number
+    tem_matricula: boolean
+  }> {
+    return pedir(`/backend/v1/ead/curso/${encodeURIComponent(cursoSlug)}`)
   },
 
   async resgatarPresente(

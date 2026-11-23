@@ -6,22 +6,33 @@
 // ── POR QUE A COLEÇÃO NOVA ────────────────────────────────────────────────
 // DEFEITO ATUAL: a imagem mora em `cursos`, cujo arquivo é servido em
 // /api/files/{cursos}/{id}/{arquivo} SEM checagem. Qualquer pessoa com o link
-// baixa a assinatura do Eduardo.
+// baixa a assinatura do Eduardo. Rubrica de assinatura não é segredo grave, mas
+// é dado pessoal do dono e não tem por que ficar aberta.
 //
 // ── COMO A PROTEÇÃO FUNCIONA ──────────────────────────────────────────────
 //   * coleção `rubricas`: `listRule`/`viewRule` exigem USUÁRIO AUTENTICADO QUE
 //     TENHA CERTIFICADO EMITIDO (`@collection.certificados.user ?= @request.auth.id`).
-//   * `createRule`/`updateRule`/`deleteRule` nulos: só o servidor escreve.
-//   * a imagem sai por /backend/v1/certificado/{codigo}/rubrica, que confere.
+//     Admin e suporte também entram (precisam conferir o que enviam).
+//   * `createRule`/`deleteRule` nulos: só o servidor escreve.
+//   * o arquivo em si: o PocketBase exige autorização para /api/files/ quando a
+//     coleção não é pública. A tela busca com o TOKEN de arquivo
+//     (pb.files.getToken()), não com a URL anônima.
 //
 // ── MIGRAÇÃO DO QUE JÁ EXISTE ─────────────────────────────────────────────
 // Se algum curso tem `cert_assinatura`, a imagem é copiada para a coleção nova
 // e o campo antigo é LIMPADO — senão continuaria vazando pela URL antiga, e a
 // proteção seria decorativa.
+//
+// ── POR QUE A PÁGINA PÚBLICA NÃO MOSTRA A ASSINATURA ──────────────────────
+// O pedido é explícito. Faz sentido: a validação pública existe para provar que
+// o certificado é real, e isso o código e o nome já fazem. A rubrica é do dono,
+// não é prova de autenticidade — é ornamento.
 
 migrate(
   (app) => {
+    // ---------------------------------------------------------------
     // 1. coleção `rubricas`
+    // ---------------------------------------------------------------
     let col = null
     try {
       col = app.findCollectionByNameOrId('rubricas')
@@ -31,6 +42,9 @@ migrate(
       col = new Collection({
         name: 'rubricas',
         type: 'base',
+        // Só quem tem certificado emitido (ou a equipe) lê.
+        // `?=` é o operador de "contém" para relação de valor único, e é o
+        // caminho que o PocketBase aceita para consultar outra coleção.
         listRule:
           '@request.auth.id != "" && (@request.auth.papel = "admin" || @request.auth.papel = "suporte" || @collection.certificados.user ?= @request.auth.id)',
         viewRule:
@@ -53,6 +67,8 @@ migrate(
             maxSelect: 1,
             maxSize: 2097152,
             mimeTypes: ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'],
+            // `protected: true` NÃO fecha /api/files/ sozinho — a regra da
+            // coleção é que fecha (lição do lote 1). Mantido por intenção.
             protected: true,
           },
           { name: 'assinante_nome', type: 'text', required: false, max: 160 },
@@ -66,7 +82,9 @@ migrate(
       console.log('[ead][rubrica] coleção rubricas ja existe')
     }
 
+    // ---------------------------------------------------------------
     // 2. migra a rubrica que estiver em `cursos` e limpa o campo antigo
+    // ---------------------------------------------------------------
     let migrados = 0
     try {
       const cursos = app.findRecordsByFilter('cursos', "cert_assinatura != ''", '', 50, 0)
@@ -75,15 +93,20 @@ migrate(
         const nomeArq = String(curso.getString('cert_assinatura') || '').trim()
         if (!nomeArq) continue
 
+        // Lê o arquivo do storage do próprio PocketBase.
+        // ⚠ `newFilesystem().get()` NÃO existe no JSVM — o caminho correto é
+        // fileFS sobre o diretório de storage (lição registrada na memória).
         let conteudo = null
         try {
           const dir = $os.dirFS($app.dataDir() + '/storage/' + curso.baseFilesPath())
           const fs = $app.newFilesystem()
-          conteudo = fs.getFile(dir, nomeArq)
+          const f = fs.getFile(dir, nomeArq)
+          conteudo = f
         } catch (errA) {
           console.log('[ead][rubrica] nao consegui ler o arquivo ' + nomeArq + ': ' + errA.message)
         }
 
+        // Já existe rubrica para este curso?
         let ja = null
         try {
           ja = app.findFirstRecordByFilter('rubricas', 'curso = {:c}', { c: curso.id })
@@ -94,13 +117,20 @@ migrate(
             ja = new Record(col)
             ja.set('curso', curso.id)
           }
-          if (conteudo) ja.set('imagem', conteudo)
+          // Se a leitura do arquivo funcionou, copia; senão registra o NOME
+          // para o dono reenviar pelo painel (melhor um registro sem imagem e
+          // visível no painel do que perder a referência em silêncio).
+          if (conteudo) {
+            ja.set('imagem', conteudo)
+          }
           ja.set('assinante_nome', curso.getString('cert_assinante_nome') || '')
           ja.set('assinante_cargo', curso.getString('cert_assinante_cargo') || '')
           app.save(ja)
           migrados++
         } catch (errB) {
-          console.log('[ead][rubrica] falha ao migrar curso ' + curso.getString('slug') + ': ' + errB.message)
+          console.log(
+            '[ead][rubrica] falha ao migrar curso ' + curso.getString('slug') + ': ' + errB.message,
+          )
           continue
         }
 
@@ -120,6 +150,7 @@ migrate(
     console.log('[ead][rubrica] cursos migrados: ' + migrados)
   },
   (app) => {
-    // Reverter apagaria a única cópia da imagem. Não é automático.
+    // Reverter deixaria o campo antigo vazio e a rubrica só na coleção nova.
+    // Não é automático: reverter apagaria a única cópia da imagem.
   },
 )

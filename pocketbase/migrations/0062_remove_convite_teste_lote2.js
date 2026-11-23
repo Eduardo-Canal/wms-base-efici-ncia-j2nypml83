@@ -7,8 +7,9 @@
 // contagem (1 convite, 0 conversões). Convite de teste com marcadores já
 // gravados (`aberto_em`) é pior: parece um lead real que abriu e desistiu.
 //
-// O QUE TAMBÉM SAI: resgates e matrículas criados por ele. Sem isso, sobraria
-// uma matrícula de um aluno que não existe no painel.
+// O QUE TAMBÉM SAI: resgates e matrículas criados por ele — se eu tiver
+// conseguido resgatar. Sem isso, sobraria uma matrícula de um aluno que não
+// existe no painel.
 
 migrate(
   (app) => {
@@ -25,9 +26,11 @@ migrate(
 
     const id = v.id
 
+    // resgates deste convite
     try {
       const rs = app.findRecordsByFilter('voucher_resgates', 'voucher = {:v}', '', 50, 0, { v: id })
       for (let i = 0; i < rs.length; i++) {
+        // matrícula correspondente, se houver
         try {
           const u = String(rs[i].getString('user'))
           const c = String(rs[i].getString('curso'))

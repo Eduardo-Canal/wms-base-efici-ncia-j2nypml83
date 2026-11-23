@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-18T18:35:06.687Z",
+  "generatedAt": "2026-11-23T15:21:29.054Z",
   "collections": [
     {
       "name": "users",
@@ -53,6 +53,12 @@
             "admin",
             "suporte"
           ]
+        },
+        {
+          "name": "empresa",
+          "type": "text",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
@@ -189,6 +195,29 @@
         {
           "name": "cert_assinatura",
           "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "rascunho",
+            "em_breve",
+            "publicado"
+          ]
+        },
+        {
+          "name": "descricao_curta",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "aulas_previstas",
+          "type": "number",
           "required": false,
           "system": false
         }
@@ -932,6 +961,36 @@
             "onCreate",
             "onUpdate"
           ]
+        },
+        {
+          "name": "maturidade_por_controle",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "textos_maturidade",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "proximo_passo_por_momento",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "whatsapp_atendimento",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "mensagem_whatsapp",
+          "type": "text",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
@@ -1040,6 +1099,80 @@
             "onCreate",
             "onUpdate"
           ]
+        },
+        {
+          "name": "nome_lead",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "empresa",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "whatsapp_lead",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "recado",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "responsavel",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "so_este_email",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "curso",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "cursos"
+        },
+        {
+          "name": "aberto_em",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "entrou_em",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "diagnostico_em",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "concluiu_em",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "aprofundamento_em",
+          "type": "date",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
@@ -1319,6 +1452,381 @@
       ],
       "indexes": [
         "CREATE UNIQUE INDEX idx_limite_chave ON limite_requisicoes (chave)"
+      ]
+    },
+    {
+      "name": "dores",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != \"\"",
+        "view": "@request.auth.id != \"\"",
+        "create": "@request.auth.papel = \"admin\"",
+        "update": "@request.auth.papel = \"admin\"",
+        "delete": "@request.auth.papel = \"admin\""
+      },
+      "fields": [
+        {
+          "name": "nome",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "texto_prediagnostico",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ordem",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ativo",
+          "type": "bool",
+          "required": false,
+          "system": false
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_dores_nome ON dores (nome)"
+      ]
+    },
+    {
+      "name": "diagnosticos",
+      "type": "base",
+      "apiRules": {
+        "list": "user = @request.auth.id || @request.auth.papel = \"admin\" || @request.auth.papel = \"suporte\"",
+        "view": "user = @request.auth.id || @request.auth.papel = \"admin\" || @request.auth.papel = \"suporte\"",
+        "create": "user = @request.auth.id",
+        "update": "user = @request.auth.id",
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "curso",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "cursos"
+        },
+        {
+          "name": "tipo_operacao",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "3pl",
+            "armazem_geral",
+            "cd_proprio",
+            "ecommerce",
+            "outro"
+          ]
+        },
+        {
+          "name": "controle_atual",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "planilha",
+            "erp",
+            "wms_mercado",
+            "sistema_proprio",
+            "implantando"
+          ]
+        },
+        {
+          "name": "dores",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "dores"
+        },
+        {
+          "name": "papel",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "diretoria",
+            "gerencia",
+            "supervisao",
+            "ti",
+            "consultoria",
+            "outro"
+          ]
+        },
+        {
+          "name": "porte",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "ate_2mil",
+            "de_2a10mil",
+            "de_10a30mil",
+            "acima_30mil"
+          ]
+        },
+        {
+          "name": "aceite_contato",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "aceite_contato_em",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "aceite_texto_versao",
+          "type": "text",
+          "required": false,
+          "system": false
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_diag_user_curso ON diagnosticos (user, curso)"
+      ]
+    },
+    {
+      "name": "aula_dores",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != \"\"",
+        "view": "@request.auth.id != \"\"",
+        "create": "@request.auth.papel = \"admin\"",
+        "update": "@request.auth.papel = \"admin\"",
+        "delete": "@request.auth.papel = \"admin\""
+      },
+      "fields": [
+        {
+          "name": "aula",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "aulas"
+        },
+        {
+          "name": "dor",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "dores"
+        },
+        {
+          "name": "porta_entrada",
+          "type": "bool",
+          "required": false,
+          "system": false
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_auladores_aula_dor ON aula_dores (aula, dor)"
+      ]
+    },
+    {
+      "name": "respostas_fixacao",
+      "type": "base",
+      "apiRules": {
+        "list": "user = @request.auth.id || @request.auth.papel = \"admin\" || @request.auth.papel = \"suporte\"",
+        "view": "user = @request.auth.id || @request.auth.papel = \"admin\" || @request.auth.papel = \"suporte\"",
+        "create": "user = @request.auth.id",
+        "update": "user = @request.auth.id",
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "aula",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "aulas"
+        },
+        {
+          "name": "texto",
+          "type": "text",
+          "required": false,
+          "system": false
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_respfx_user_aula ON respostas_fixacao (user, aula)"
+      ]
+    },
+    {
+      "name": "prediagnosticos",
+      "type": "base",
+      "apiRules": {
+        "list": "user = @request.auth.id || @request.auth.papel = \"admin\" || @request.auth.papel = \"suporte\"",
+        "view": "user = @request.auth.id || @request.auth.papel = \"admin\" || @request.auth.papel = \"suporte\"",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "curso",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "cursos"
+        },
+        {
+          "name": "codigo",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "momento",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "estudando",
+            "avaliando",
+            "projeto_aprovado",
+            "tem_wms"
+          ]
+        },
+        {
+          "name": "prazo",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "ate_3m",
+            "de_3a6m",
+            "de_6a12m",
+            "sem_prazo"
+          ]
+        },
+        {
+          "name": "nivel",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "snapshot",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "enviar_anotacoes",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "aprofundamento_em",
+          "type": "date",
+          "required": false,
+          "system": false
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_prediag_user_curso ON prediagnosticos (user, curso)",
+        "CREATE UNIQUE INDEX idx_prediag_codigo ON prediagnosticos (codigo)"
+      ]
+    },
+    {
+      "name": "avisos_lancamento",
+      "type": "base",
+      "apiRules": {
+        "list": "user = @request.auth.id || @request.auth.papel = \"admin\" || @request.auth.papel = \"suporte\"",
+        "view": "user = @request.auth.id || @request.auth.papel = \"admin\" || @request.auth.papel = \"suporte\"",
+        "create": "user = @request.auth.id",
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "curso",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "cursos"
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_avisos_user_curso ON avisos_lancamento (user, curso)"
+      ]
+    },
+    {
+      "name": "rubricas",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != \"\" && (@request.auth.papel = \"admin\" || @request.auth.papel = \"suporte\" || @collection.certificados.user ?= @request.auth.id)",
+        "view": "@request.auth.id != \"\" && (@request.auth.papel = \"admin\" || @request.auth.papel = \"suporte\" || @collection.certificados.user ?= @request.auth.id)",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "curso",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "cursos"
+        },
+        {
+          "name": "imagem",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "assinante_nome",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "assinante_cargo",
+          "type": "text",
+          "required": false,
+          "system": false
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_rubricas_curso ON rubricas (curso)"
       ]
     }
   ]

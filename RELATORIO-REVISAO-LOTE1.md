@@ -23,10 +23,10 @@ Se a revisão foi feita sobre um código diferente deste, me diga qual — refa�
 
 **O que fiz:** levantei todas as contas com papel `admin` ou `suporte`.
 
-| Papel | Nome | E-mail | Criada em |
-|---|---|---|---|
-| admin | (conta do Skip/Gateway) | **sem e-mail** (`Banco_ead`) | 2026-11-15 03:40 |
-| admin | Admin Teste | admin.teste@exemplo.com | 2026-11-15 23:18 |
+| Papel | Nome                                             | E-mail                          | Criada em        |
+| ----- | ------------------------------------------------ | ------------------------------- | ---------------- |
+| admin | (conta do Skip/Gateway)                          | **sem e-mail** (`Banco_ead`)    | 2026-11-15 03:40 |
+| admin | Admin Teste                                      | admin.teste@exemplo.com         | 2026-11-15 23:18 |
 | admin | — (conta do dono, promovida pela 0026/0027/0028) | eduardo.canal@zionlogtec.com.br | anterior a 15/11 |
 
 Contas `aluno`: 3 (Aluno Voucher, Aluno Dois, Cadastro Teste — todas de teste, `verified=false`).
@@ -42,17 +42,18 @@ Contas `aluno`: 3 (Aluno Voucher, Aluno Dois, Cadastro Teste — todas de teste,
 **Arquivos:** `pocketbase/hooks/progresso-aula.pb.js`, `pocketbase/hooks/cron-ead.pb.js` (não aplicável aqui), `src/ead/telas/Player.tsx` (só exibe aviso novo)
 
 **O que mudou:**
+
 1. **A duração enviada pelo cliente é ignorada por completo.** Fonte única: `duracao_seg` do cadastro. Sem duração, a aula grava posição e **nunca conclui**, e a resposta traz `duracao_ausente: true`.
 2. **Crédito por intervalo** = menor entre (a) avanço da posição, (b) tempo de relógio do servidor × 2, (c) **60 s**. Antes cabiam 3600 s por report.
 3. Erro interno não devolve `err.message` ao cliente.
 
 **Como testei** (`work/revisao-lote1/teste.py`, contra produção):
 
-| Teste | Resultado |
-|---|---|
-| POST com `duracao: 1` numa aula de 180 s | alvo continuou **162 s** (90% de 180) — duração do cliente ignorada ✓ |
-| Mesmo POST em aula de 180 s sem histórico | `assistidos=0`, `concluida=false` ✓ |
-| POST em aula com `duracao_seg=0` pedindo 99999 s | `concluida=false`, `duracao_ausente=true` ✓ |
+| Teste                                            | Resultado                                                             |
+| ------------------------------------------------ | --------------------------------------------------------------------- |
+| POST com `duracao: 1` numa aula de 180 s         | alvo continuou **162 s** (90% de 180) — duração do cliente ignorada ✓ |
+| Mesmo POST em aula de 180 s sem histórico        | `assistidos=0`, `concluida=false` ✓                                   |
+| POST em aula com `duracao_seg=0` pedindo 99999 s | `concluida=false`, `duracao_ausente=true` ✓                           |
 
 **Aceite:** aula sem duração nunca conclui ✓ · posição no fim não conclui ✓ · assistir normalmente conclui (testado antes em 9 reports de 20 s: concluiu em 166/185 s).
 
@@ -121,12 +122,12 @@ O rate limit do PocketBase é configuração do servidor, não código, e **não
 
 **Valores que recomendo** (para você aplicar em Skip Cloud → Configurações, ou autorizar que eu procure o endpoint):
 
-| Rota | Limite sugerido |
-|---|---|
-| `POST /backend/v1/voucher/resgatar` | 10 / 60 s por IP |
-| `GET /backend/v1/certificado/{codigo}` | 30 / 60 s por IP |
+| Rota                                             | Limite sugerido  |
+| ------------------------------------------------ | ---------------- |
+| `POST /backend/v1/voucher/resgatar`              | 10 / 60 s por IP |
+| `GET /backend/v1/certificado/{codigo}`           | 30 / 60 s por IP |
 | `POST /api/collections/users/auth-with-password` | 10 / 60 s por IP |
-| `POST /api/collections/users/records` | 5 / 60 s por IP |
+| `POST /api/collections/users/records`            | 5 / 60 s por IP  |
 
 ---
 
@@ -144,12 +145,12 @@ Regra aplicada: com a área fechada, **equipe e matrícula ativa passam**; visit
 
 **Testes (produção):**
 
-| Teste | Resultado |
-|---|---|
-| visitante lista `aulas` | **403** ✓ |
-| visitante lista `partes` | **403** ✓ |
-| aluno com matrícula lista `aulas` | **200** ✓ |
-| conta sem matrícula lista `aulas` | **403** ✓ |
+| Teste                               | Resultado             |
+| ----------------------------------- | --------------------- |
+| visitante lista `aulas`             | **403** ✓             |
+| visitante lista `partes`            | **403** ✓             |
+| aluno com matrícula lista `aulas`   | **200** ✓             |
+| conta sem matrícula lista `aulas`   | **403** ✓             |
 | `material_url` na listagem do aluno | **0 links vazados** ✓ |
 
 ### 13. `concluir-equipe` — **FEITO**
@@ -172,7 +173,7 @@ Mover a imagem para coleção fechada e servir "só composta no certificado" exi
 
 ### 17. CDN token authentication do Bunny — **NÃO VERIFICADO**
 
-Não tenho acesso ao painel do Bunny. **Preciso que você confira:** Bunny → Stream → sua biblioteca → *Security* → **"CDN Token Authentication"** ligado. Se estiver desligado, o HLS abre com o GUID e a URL assinada do embed é contornável.
+Não tenho acesso ao painel do Bunny. **Preciso que você confira:** Bunny → Stream → sua biblioteca → _Security_ → **"CDN Token Authentication"** ligado. Se estiver desligado, o HLS abre com o GUID e a URL assinada do embed é contornável.
 
 ---
 
@@ -190,27 +191,27 @@ Evidência medida: `skip_cloud_get_backend_url` devolve **um único** host (`wms
 
 ## Resumo de status
 
-| # | Item | Status |
-|---|---|---|
-| 1 | Conta admin de teste | **parcial** — listada, não apagada (regra do lote) |
-| 2 | Conclusão forjável | **feito** (falta duração via Bunny API) |
-| 3 | Certificado sem matrícula | **feito** |
-| 4 | Refund/chargeback | **feito** (sem teste real) |
-| 5 | Plano B por valor/data | **feito** |
-| 6 | E-mail não verificado | **feito** |
-| 7 | Assinatura Orders | **não feito** |
-| 8 | Transação no voucher | **feito** |
-| 9 | Voucher + verified | **feito** |
-| 10 | CSPRNG | **feito** |
-| 11 | Rate limit | **não feito** |
-| 12 | Portão + material | **feito** |
-| 13 | concluir-equipe | **feito** |
-| 14 | Rubrica fechada | **não feito** (lote 2) |
-| 15 | Escape do nome | **feito** |
-| 16 | log_acessos | **parcial** (sal + agregação ok) |
-| 17 | CDN token Bunny | **não verificado** |
-| 18 | Migration 0028 | **feito** |
-| 19 | Mesmo banco dev/prod | **sim** |
+| #   | Item                      | Status                                             |
+| --- | ------------------------- | -------------------------------------------------- |
+| 1   | Conta admin de teste      | **parcial** — listada, não apagada (regra do lote) |
+| 2   | Conclusão forjável        | **feito** (falta duração via Bunny API)            |
+| 3   | Certificado sem matrícula | **feito**                                          |
+| 4   | Refund/chargeback         | **feito** (sem teste real)                         |
+| 5   | Plano B por valor/data    | **feito**                                          |
+| 6   | E-mail não verificado     | **feito**                                          |
+| 7   | Assinatura Orders         | **não feito**                                      |
+| 8   | Transação no voucher      | **feito**                                          |
+| 9   | Voucher + verified        | **feito**                                          |
+| 10  | CSPRNG                    | **feito**                                          |
+| 11  | Rate limit                | **não feito**                                      |
+| 12  | Portão + material         | **feito**                                          |
+| 13  | concluir-equipe           | **feito**                                          |
+| 14  | Rubrica fechada           | **não feito** (lote 2)                             |
+| 15  | Escape do nome            | **feito**                                          |
+| 16  | log_acessos               | **parcial** (sal + agregação ok)                   |
+| 17  | CDN token Bunny           | **não verificado**                                 |
+| 18  | Migration 0028            | **feito**                                          |
+| 19  | Mesmo banco dev/prod      | **sim**                                            |
 
 **10 feitos · 2 parciais · 4 não feitos · 1 não verificado**
 

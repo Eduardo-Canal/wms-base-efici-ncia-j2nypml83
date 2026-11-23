@@ -7,8 +7,8 @@
 // Antes a imagem ia para `cursos.cert_assinatura`, servido por URL pública
 // (/api/files/cursos/...). Qualquer pessoa com o link baixava a assinatura.
 // Agora vai para a coleção `rubricas`, cuja regra exige usuário autenticado com
-// certificado emitido (ou a equipe). O campo antigo é limpo aqui a cada gravação
-// — se voltasse a ser escrito, a proteção seria decorativa.
+// certificado emitido (ou a equipe). O campo antigo foi limpo pela migration
+// 0061 — se voltasse a ser escrito, a proteção seria decorativa.
 //
 // POR QUE UM ENDPOINT PRÓPRIO E NÃO UM PATCH NO REGISTRO: `rubricas` tem
 // createRule nulo (só o servidor escreve) e upload exige multipart, que não
@@ -39,6 +39,8 @@ routerAdd(
     } catch (_) {}
     if (!curso) return e.json(404, { codigo: 'curso_inexistente', mensagem: 'Curso não existe.' })
 
+    // Lê da coleção nova. Fallback para o campo antigo só para o ADMIN saber
+    // que ainda há imagem lá (a 0061 deveria ter limpado).
     let rub = null
     try {
       rub = $app.findFirstRecordByFilter('rubricas', 'curso = {:c}', { c: curso.id })
@@ -92,6 +94,7 @@ routerAdd(
     } catch (_) {}
     if (!curso) return e.json(404, { codigo: 'curso_inexistente', mensagem: 'Curso não existe.' })
 
+    // Registro da rubrica (cria se não existir).
     let rub = null
     try {
       rub = $app.findFirstRecordByFilter('rubricas', 'curso = {:c}', { c: curso.id })
@@ -109,11 +112,13 @@ routerAdd(
     } catch (_) {}
 
     if (!arquivos || !arquivos.length) {
+      // Sem arquivo no multipart: pode ser remover.
       if (corpo.remover === true || corpo.remover === 'true') {
         if (novo) return e.json(200, { ok: true, remover: true, mensagem: 'Não havia rubrica.' })
         try {
           rub.set('imagem', '')
           $app.save(rub)
+          // Limpa também o campo antigo, se ainda tiver algo.
           if (texto(curso.getString('cert_assinatura'))) {
             curso.set('cert_assinatura', '')
             $app.save(curso)
@@ -159,6 +164,7 @@ routerAdd(
     return e.json(200, {
       ok: true,
       arquivo: texto(rub.getString('imagem')),
+      // Sem URL: a imagem sai pelo endpoint que confere identidade.
       mensagem:
         'Rubrica enviada. Ela passa a aparecer nos certificados emitidos a partir de agora.',
     })
